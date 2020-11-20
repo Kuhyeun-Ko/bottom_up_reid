@@ -1,3 +1,9 @@
+# Ignore training results
+examples/*.pickle
+**/@eaDir
+**/@SynoResource
+**/*.pickle
+
 *~
 init/
 

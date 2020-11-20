@@ -41,8 +41,12 @@ class Dataset(object):
                              .format(len(splits)))
         self.split = splits[self.split_id]
 
-        train_pids = np.asarray(self.split['train'])
+        # # khko 
+        # self.split['train']=self.split['train'][:10]
+        # self.split['query']=self.split['query'][:10]
+        # self.split['gallery']=self.split['gallery'][:10]
 
+        train_pids = np.asarray(self.split['train'])
 
         self.meta = read_json(osp.join(self.root, 'meta.json'))
         identities = self.meta['identities']

@@ -16,7 +16,7 @@ from reid.utils.data.preprocessor import Preprocessor
 import random
 import pickle as pkl
 from reid.exclusive_loss import ExLoss
-
+import os
 
 class Bottom_up():
     def __init__(self, model_name, batch_size, num_classes, dataset, u_data, save_path, embeding_fea_size=1024,
@@ -271,6 +271,11 @@ class Bottom_up():
 
         return labels, new_train_data
 
+    def save(self, step, log_path):
+        torch.save(self.model.state_dict(), self.save_path+'/%s/%s.pth'%(log_path, step))
+
+    def load(self, model_path):
+        self.model.load_state_dict(torch.load(model_path))
 
 def change_to_unlabel(dataset):
     # generate unlabeled set
@@ -282,7 +287,8 @@ def change_to_unlabel(dataset):
             print(videoid, 'RANGE ERROR')
         assert videoid >= 0
         trimmed_dataset.append([imgs, pid, camid, videoid])
-
+    # print(trimmed_dataset)
+    # raise ValueError
     index_labels = []
     for idx, data in enumerate(trimmed_dataset):
         data[3] = idx # data[3] is the label of the data array
