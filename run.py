@@ -36,8 +36,8 @@ def main(args):
     # BuMain.load('logs/PRW_BUformat/20200904_105726/0.pth')
     for step in range(int(1/args.merge_percent)-1):
         
-        # BuMain.train(new_train_data, step, loss=args.loss) 
-        # BuMain.save(step, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2)))
+        BuMain.train(new_train_data, step, loss=args.loss) 
+        BuMain.save(step, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2)))
 
         BuMain.evaluate(dataset_all.query, dataset_all.gallery)
 
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--arch', type=str, default='avg_pool',choices=models.names())
     working_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument('--data_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'../../datasets'))
+                        default=os.path.join(working_dir,'../datasets'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs'))
+                        default=os.path.join(working_dir,'logs/GT'))
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss')
     parser.add_argument('-m', '--momentum', type=float, default=0.5)

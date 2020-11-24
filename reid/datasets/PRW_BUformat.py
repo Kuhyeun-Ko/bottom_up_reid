@@ -4,7 +4,8 @@ import os
 from ..utils.data import Dataset
 from ..utils.osutils import mkdir_if_missing
 from ..utils.serialization import write_json
-
+import json
+from tqdm import tqdm
 
 class PRW_BUformat(Dataset):
     def __init__(self, root, split_id=0, num_val=100, download=True):
@@ -39,17 +40,23 @@ class PRW_BUformat(Dataset):
         images_dir = osp.join(self.root, 'images')
         mkdir_if_missing(images_dir)
 
+        scene_matching_dir = self.root+'/scene_matching.json'
+        with open(scene_matching_dir, 'r') as fp:
+            scene_matching_dict=json.load(fp)
+
+
         # totally 1261 person (482+?) with 6 camera views each
         # id 1~482 are for training
         # id 483~933 are for testing
-        identities = [[{} for _ in range(6)] for _ in range(1503)]
+        identities = [[{} for _ in range(6)] for _ in range(934)]
 
         def register(subdir):
             pids = set()
             vids = []
+            scene_id=[]
             person_list = os.listdir(os.path.join(self.root, subdir)); person_list.sort()
             person_list=[person for person in person_list if ((person[0] != '.') and (person[0] != '@')) ]
-            for person_id in person_list:
+            for person_id in tqdm(person_list):
                 videos = os.listdir(os.path.join(self.root, subdir, person_id)); videos.sort()
                 videos=[video for video in videos if video[0] != '.' and video[0] != '@' ]
                 for video_id in videos:
@@ -60,8 +67,9 @@ class PRW_BUformat(Dataset):
                     frame_list = []
                     for fname in fnames:
                         pid = int(person_id)
+                        if pid == -2: pid =0
                         cam = int(fname.split('_')[1][1]) - 1
-                        assert -2 <= pid <= 933
+                        assert 0 <= pid <= 933
                         assert 0 <= cam <= 5
                         pids.add(pid)
                         newname = ('{:04d}_{:02d}_{:05d}_{:04d}.jpg'.format(pid, cam, video_id, len(frame_list)))
@@ -69,7 +77,8 @@ class PRW_BUformat(Dataset):
                         shutil.copy(osp.join(video_path, fname), osp.join(images_dir, newname))
                     identities[pid][cam][video_id] = frame_list
                     vids.append(frame_list)
-            return pids, vids
+                    if subdir == 'train_GT_': scene_id.append(scene_matching_dict[str(video_id+1).zfill(5)])
+            return pids, vids, scene_id
 
         print("begin to preprocess PRW_BUformat dataset")
         print("################################")
@@ -77,16 +86,18 @@ class PRW_BUformat(Dataset):
         print("COPY TO IMAGES")
         print("################################")
         print("################################")
-        trainval_pids, _ = register('train')
-        gallery_pids, gallery_vids = register('gallery_Detected_')
+        trainval_pids, trainval_vids, train_scene_id = register('train_GT_')
         # gallery_pids, gallery_vids = register('gallery_Detected_')
-        query_pids, query_vids = register('query')
+        gallery_pids, gallery_vids, _ = register('gallery_GT_')
+        query_pids, query_vids, _ = register('query_')
         # assert query_pids <= gallery_pids
         # assert trainval_pids.isdisjoint(gallery_pids)
 
         # Save meta information into a json file
         meta = {'name': self.name, 'shot': 'multiple', 'num_cameras': 6,
                 'identities': identities,
+                'train': trainval_vids,
+                'train_img': train_scene_id,
                 'query': query_vids,
                 'gallery': gallery_vids}
         write_json(meta, osp.join(self.root, 'meta.json'))

@@ -22,7 +22,7 @@ def extract_features(model, data_loader, print_freq=1, metric=None):
     fcs = OrderedDict()
 
     print("Begin to extract features...")
-    for i, (imgs, fnames, pids, _, _) in tqdm(enumerate(data_loader)):
+    for i, (imgs, fnames, pids, _, _,_) in tqdm(enumerate(data_loader)):
         _fcs, pool5s = extract_cnn_feature(model, imgs)
         for fname, fc, pool5, pid in zip(fnames, _fcs, pool5s, pids):
             features[fname] = pool5
@@ -102,15 +102,5 @@ class Evaluator(object):
         self.model = model
     def evaluate(self, data_loader, query, gallery, metric=None):
         features, _, _ = extract_features(self.model, data_loader)
-        print('query: ', query)
-        print('gallery: ', gallery)
-        print('features: ', features)
-        print('features: ', features['0501_00_29713_0000.jpg'].shape)
-        print('query: ', query[0])
-        print('gallery: ', gallery[0])
-        print('len(features): ', len(features))
-        print('len(query): ', len(query))
-        print('len(gallery): ', len(gallery))
-        raise ValueError
         distmat = pairwise_distance(features, query, gallery, metric=metric)
         return evaluate_all(distmat, query=query, gallery=gallery)

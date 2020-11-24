@@ -38,7 +38,7 @@ class BaseTrainer(object):
         for i, inputs in enumerate(data_loader):
             data_time.update(time.time() - end)
 
-            inputs, targets = self._parse_data(inputs)
+            inputs, targets, sceneid = self._parse_data(inputs)
             loss, prec1 = self._forward(inputs, targets)
     
             losses.update(loss.item(), targets.size(0))
@@ -75,10 +75,10 @@ class BaseTrainer(object):
 
 class Trainer(BaseTrainer):
     def _parse_data(self, inputs):
-        imgs, _, pids, indexs, videoid = inputs
+        imgs, _, pids, indexs, videoid, sceneid = inputs
         inputs = Variable(imgs, requires_grad=False)
         targets = Variable(videoid.cuda())
-        return inputs, targets
+        return inputs, targets, sceneid
 
     def _forward(self, inputs, targets):
         outputs, _ = self.model(inputs)

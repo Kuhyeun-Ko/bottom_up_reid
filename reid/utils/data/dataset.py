@@ -45,7 +45,7 @@ class Dataset(object):
         # self.split['train']=self.split['train'][:10]
         # self.split['query']=self.split['query'][:10]
         # self.split['gallery']=self.split['gallery'][:10]
-
+        
         train_pids = np.asarray(self.split['train'])
 
         self.meta = read_json(osp.join(self.root, 'meta.json'))
@@ -63,14 +63,22 @@ class Dataset(object):
             for fname_list in query_fnames:
                 name = osp.splitext(fname_list[0])[0]
                 pid, cam, vid,  _ = map(int, name.split('_'))
-                self.query.append((tuple(fname_list), pid, cam, vid))
+                self.query.append((tuple(fname_list), pid, cam, vid,_))
             self.gallery = []
             for fname_list in gallery_fnames:
                 name = osp.splitext(fname_list[0])[0]
                 pid, cam, vid, _ = map(int, name.split('_'))
-                self.gallery.append((tuple(fname_list), pid, cam, vid))
+                self.gallery.append((tuple(fname_list), pid, cam, vid,_))
 
+            # khko: For PRW datasets
+            train_fnames=self.meta['train']
+            train_snames=self.meta['train_img']
 
+            self.train=[]
+            for fname_list, sname_list in zip(train_fnames, train_snames):
+                name = osp.splitext(fname_list[0])[0]
+                pid, cam, vid,  _ = map(int, name.split('_'))
+                self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list])))
 
         if verbose:
             print(self.__class__.__name__, "dataset loaded")

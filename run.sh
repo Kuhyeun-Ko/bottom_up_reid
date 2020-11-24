@@ -4,7 +4,8 @@ dataset=PRW_BUformat
 #dataset=mars
 #dataset=DukeMTMC-VideoReID
 
-batchSize=16
+batchSize=128
+# batchSize=16
 size_penalty=0.003
 merge_percent=0.05
 

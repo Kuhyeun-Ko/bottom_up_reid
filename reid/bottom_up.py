@@ -30,7 +30,7 @@ class Bottom_up():
 
         self.dataset = dataset
         self.u_data = u_data
-        self.u_label = np.array([label for _, label, _, _ in u_data])
+        self.u_label = np.array([label for _, label, _, _, _ in u_data])
 
         self.dataloader_params = {}
         self.dataloader_params['height'] = 256
@@ -281,12 +281,12 @@ def change_to_unlabel(dataset):
     # generate unlabeled set
     trimmed_dataset = []
     init_videoid = int(dataset.train[0][3])
-    for (imgs, pid, camid, videoid) in dataset.train:
+    for (imgs, pid, camid, videoid, sceneid) in dataset.train:
         videoid = int(videoid) - init_videoid
         if videoid < 0:
             print(videoid, 'RANGE ERROR')
         assert videoid >= 0
-        trimmed_dataset.append([imgs, pid, camid, videoid])
+        trimmed_dataset.append([imgs, pid, camid, videoid, sceneid])
     # print(trimmed_dataset)
     # raise ValueError
     index_labels = []
