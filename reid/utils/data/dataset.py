@@ -41,11 +41,6 @@ class Dataset(object):
                              .format(len(splits)))
         self.split = splits[self.split_id]
 
-        # # khko 
-        # self.split['train']=self.split['train'][:10]
-        # self.split['query']=self.split['query'][:10]
-        # self.split['gallery']=self.split['gallery'][:10]
-        
         train_pids = np.asarray(self.split['train'])
 
         self.meta = read_json(osp.join(self.root, 'meta.json'))
@@ -79,6 +74,11 @@ class Dataset(object):
                 name = osp.splitext(fname_list[0])[0]
                 pid, cam, vid,  _ = map(int, name.split('_'))
                 self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list])))
+
+            # khko
+            # self.train=self.train[:10]
+            # self.query=self.query[:10]
+            # self.gallery=self.gallery[:10]
 
         if verbose:
             print(self.__class__.__name__, "dataset loaded")

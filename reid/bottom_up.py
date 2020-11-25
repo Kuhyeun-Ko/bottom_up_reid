@@ -184,31 +184,60 @@ class Bottom_up():
 
 
     def select_merge_data(self, u_feas, label, label_to_images,  ratio_n,  dists):
+        # set 10000 for ovelapped distance
         dists.add_(torch.tril(100000 * torch.ones(len(u_feas), len(u_feas))))
-
         cnt = torch.FloatTensor([ len(label_to_images[label[idx]]) for idx in range(len(u_feas))])
         dists += ratio_n * (cnt.view(1, len(cnt)) + cnt.view(len(cnt), 1))
-        
         for idx in range(len(u_feas)):
             for j in range(idx + 1, len(u_feas)):
+                # set 10000 for same id image(person)
                 if label[idx] == label[j]:
                     dists[idx, j] = 100000
 
         dists = dists.numpy()
+        # index of smallest sorted distance
+        ind = np.unravel_index(np.argsort(dists, axis=None), dists.shape)
+        idx1 = ind[0]
+        idx2 = ind[1]
+        return idx1, idx2
+
+    def select_unique_constratint_merge_data(self, u_feas, label, label_to_images,  ratio_n,  dists):
+        # set 10000 for ovelapped distance
+        dists.add_(torch.tril(100000 * torch.ones(len(u_feas), len(u_feas))))
+        cnt = torch.FloatTensor([ len(label_to_images[label[idx]]) for idx in range(len(u_feas))])
+        dists += ratio_n * (cnt.view(1, len(cnt)) + cnt.view(len(cnt), 1))
+        for idx in range(len(u_feas)):
+            for j in range(idx + 1, len(u_feas)):
+                # set 10000 for same id image(person)
+                if label[idx] == label[j]:
+                    dists[idx, j] = 100000
+
+        # uniqueness constraint
+        scene_ids=np.empty(len(self.u_data), dtype=object)
+        for i, u_data_ in enumerate(self.u_data): scene_ids[i]=u_data_[4][0]
+        for i, scene_id in enumerate(scene_ids):
+            inds=(scene_ids==scene_id).nonzero()[0]
+            for ind1 in inds:
+                for ind2 in inds:
+                    if ind1!=ind2: dists[ind1,ind2]=100000
+
+        dists = dists.numpy()
+        # index of smallest sorted distance
         ind = np.unravel_index(np.argsort(dists, axis=None), dists.shape)
         idx1 = ind[0]
         idx2 = ind[1]
         return idx1, idx2
 
 
-
     def generate_new_train_data(self, idx1, idx2, label,num_to_merge):
         correct = 0
         num_before_merge = len(np.unique(np.array(label)))
-        # merge clusters with minimum dissimilarity
+
+        # merge clusters with minimum dissimilarity (bigger cluster id -> smaller cluster id)
         for i in range(len(idx1)):
             label1 = label[idx1[i]]
             label2 = label[idx2[i]]
+
             if label1 < label2:
                 label = [label1 if x == label2 else x for x in label]
             else:
@@ -216,16 +245,20 @@ class Bottom_up():
             if self.u_label[idx1[i]] == self.u_label[idx2[i]]:
                 correct += 1
             num_merged =  num_before_merge - len(np.sort(np.unique(np.array(label))))
+            # until # of cluster id == # of merge
             if num_merged == num_to_merge:
                 break
 
         # set new label to the new training data
         unique_label = np.sort(np.unique(np.array(label)))
+        # ex) [0,1,3,9] -> [0,1,2,3]
         for i in range(len(unique_label)):
             label_now = unique_label[i]
             label = [i if x == label_now else x for x in label]
+
         new_train_data = []
         for idx, data in enumerate(self.u_data):
+            # copy of mutable or immutable object(deep copy)
             new_data = copy.deepcopy(data)
             new_data[3] = label[idx]
             new_train_data.append(new_data)
@@ -254,11 +287,31 @@ class Bottom_up():
         return u_feas, feature_avg, label_to_images, fc_avg
 
     def get_new_train_data(self, labels, nums_to_merge, size_penalty):
+
         u_feas, feature_avg, label_to_images, fc_avg = self.generate_average_feature(labels)
         
         dists = self.calculate_distance(u_feas)
         
-        idx1, idx2 = self.select_merge_data(u_feas, labels, label_to_images, size_penalty,dists)
+        idx1, idx2 = self.select_merge_data(u_feas, labels, label_to_images, size_penalty, dists)
+        
+        new_train_data, labels = self.generate_new_train_data(idx1, idx2, labels,nums_to_merge)
+        
+        num_train_ids = len(np.unique(np.array(labels)))
+
+        # change the criterion classifer
+        self.criterion = ExLoss(self.embeding_fea_size, num_train_ids, t=10).cuda()
+        #new_classifier = fc_avg.astype(np.float32)
+        #self.criterion.V = torch.from_numpy(new_classifier).cuda()
+
+        return labels, new_train_data
+
+    def get_new_unique_constratint_train_data(self, labels, nums_to_merge, size_penalty):
+
+        u_feas, feature_avg, label_to_images, fc_avg = self.generate_average_feature(labels)
+        
+        dists = self.calculate_distance(u_feas)
+        
+        idx1, idx2 = self.select_unique_constratint_merge_data(u_feas, labels, label_to_images, size_penalty, dists)
         
         new_train_data, labels = self.generate_new_train_data(idx1, idx2, labels,nums_to_merge)
         

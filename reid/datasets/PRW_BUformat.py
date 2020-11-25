@@ -78,6 +78,7 @@ class PRW_BUformat(Dataset):
                     identities[pid][cam][video_id] = frame_list
                     vids.append(frame_list)
                     if subdir == 'train_GT_': scene_id.append(scene_matching_dict[str(video_id+1).zfill(5)])
+          
             return pids, vids, scene_id
 
         print("begin to preprocess PRW_BUformat dataset")
@@ -92,6 +93,7 @@ class PRW_BUformat(Dataset):
         query_pids, query_vids, _ = register('query_')
         # assert query_pids <= gallery_pids
         # assert trainval_pids.isdisjoint(gallery_pids)
+
 
         # Save meta information into a json file
         meta = {'name': self.name, 'shot': 'multiple', 'num_cameras': 6,
