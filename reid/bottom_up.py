@@ -184,16 +184,19 @@ class Bottom_up():
 
 
     def select_merge_data(self, u_feas, label, label_to_images,  ratio_n,  dists):
+        # print('dists1: ', dists)
         # set 10000 for ovelapped distance
         dists.add_(torch.tril(100000 * torch.ones(len(u_feas), len(u_feas))))
         cnt = torch.FloatTensor([ len(label_to_images[label[idx]]) for idx in range(len(u_feas))])
         dists += ratio_n * (cnt.view(1, len(cnt)) + cnt.view(len(cnt), 1))
+        # print('dists2: ', dists)
         for idx in range(len(u_feas)):
             for j in range(idx + 1, len(u_feas)):
                 # set 10000 for same id image(person)
                 if label[idx] == label[j]:
                     dists[idx, j] = 100000
 
+        # print('dists3: ', dists)
         dists = dists.numpy()
         # index of smallest sorted distance
         ind = np.unravel_index(np.argsort(dists, axis=None), dists.shape)
@@ -202,8 +205,11 @@ class Bottom_up():
         return idx1, idx2
 
     def select_unique_constratint_merge_data(self, u_feas, label, label_to_images,  ratio_n,  dists):
+        
         # set 10000 for ovelapped distance
         dists.add_(torch.tril(100000 * torch.ones(len(u_feas), len(u_feas))))
+        
+        # add ratio_n depending on # of same cluster 
         cnt = torch.FloatTensor([ len(label_to_images[label[idx]]) for idx in range(len(u_feas))])
         dists += ratio_n * (cnt.view(1, len(cnt)) + cnt.view(len(cnt), 1))
         for idx in range(len(u_feas)):
@@ -211,7 +217,7 @@ class Bottom_up():
                 # set 10000 for same id image(person)
                 if label[idx] == label[j]:
                     dists[idx, j] = 100000
-
+        
         # uniqueness constraint
         scene_ids=np.empty(len(self.u_data), dtype=object)
         for i, u_data_ in enumerate(self.u_data): scene_ids[i]=u_data_[4][0]
@@ -219,13 +225,15 @@ class Bottom_up():
             inds=(scene_ids==scene_id).nonzero()[0]
             for ind1 in inds:
                 for ind2 in inds:
-                    if ind1!=ind2: dists[ind1,ind2]=100000
+                    if ind1!=ind2: dists[ind1,ind2]=10000000
 
         dists = dists.numpy()
         # index of smallest sorted distance
         ind = np.unravel_index(np.argsort(dists, axis=None), dists.shape)
+        # idx1, idx2: row, column
         idx1 = ind[0]
         idx2 = ind[1]
+       
         return idx1, idx2
 
 
@@ -234,6 +242,7 @@ class Bottom_up():
         num_before_merge = len(np.unique(np.array(label)))
 
         # merge clusters with minimum dissimilarity (bigger cluster id -> smaller cluster id)
+        # from shortest distance to bigger distance
         for i in range(len(idx1)):
             label1 = label[idx1[i]]
             label2 = label[idx2[i]]
@@ -287,7 +296,6 @@ class Bottom_up():
         return u_feas, feature_avg, label_to_images, fc_avg
 
     def get_new_train_data(self, labels, nums_to_merge, size_penalty):
-
         u_feas, feature_avg, label_to_images, fc_avg = self.generate_average_feature(labels)
         
         dists = self.calculate_distance(u_feas)
@@ -310,10 +318,10 @@ class Bottom_up():
         u_feas, feature_avg, label_to_images, fc_avg = self.generate_average_feature(labels)
         
         dists = self.calculate_distance(u_feas)
-        
+
         idx1, idx2 = self.select_unique_constratint_merge_data(u_feas, labels, label_to_images, size_penalty, dists)
         
-        new_train_data, labels = self.generate_new_train_data(idx1, idx2, labels,nums_to_merge)
+        new_train_data, labels = self.generate_new_train_data(idx1, idx2, labels, nums_to_merge)
         
         num_train_ids = len(np.unique(np.array(labels)))
 
