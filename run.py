@@ -37,11 +37,13 @@ def main(args):
     for step in range(int(1/args.merge_percent)-1):
         
         BuMain.train(new_train_data, step, loss=args.loss) 
-        BuMain.evaluate(dataset_all.query, dataset_all.gallery)
+        # BuMain.evaluate(dataset_all.query, dataset_all.gallery)
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')
+        print('before: ', cluster_id_labels)
         cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        print('after: ', cluster_id_labels)
         # cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
         if step ==1: raise ValueError

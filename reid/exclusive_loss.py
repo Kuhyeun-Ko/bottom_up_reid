@@ -32,7 +32,43 @@ class ExLoss(nn.Module):
         self.weight = weight
         self.register_buffer('V', torch.zeros(num_classes, num_features))
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs, targets, label_to_pairs):
         outputs = Exclusive(self.V)(inputs, targets) * self.t
-        loss = F.cross_entropy(outputs, targets, weight=self.weight)
+        bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
+
+        # # hard negative mining
+        # hn_loss=[]
+        # sim=inputs.mm(inputs.t())
+        # print('in ExLoss')
+        # print(sim.shape)
+        # for i in range(len(sim)):
+        #     # hard positive
+        #     print(label_to_pairs)
+        #     print(label_to_pairs[i])
+        #     print(label_to_pairs[i][0])
+        #     psims=sim[i,label_to_pairs[i][0]]
+        #     print(psims)
+        #     hpsims=torch.min(psims)
+        #     print(hpsims)
+
+        #     # hard negative
+        #     nsims=sim[i,label_to_pairs[i][1]]
+        #     print(nsims)
+        #     thrd=hpsims-0.3
+        #     hnsims=nsims[thrd<nsims]
+            
+        #     print(psims)
+        #     print(nsims)
+        #     print(hpsims)
+        #     print(hnsims)
+        #     print(thrd)
+        #     hn_loss_=F.binary_cross_entropy(hpsims, torch.ones(hpsims.shape))+F.binary_cross_entropy(hnsims, -torch.ones(hnsims.shape))
+        #     hn_loss.append(hn_loss_)
+        #     raise ValueError
+
+        # # hn_loss = 
+
+        # hard negative mining with table self.V
+        loss=bu_loss
+
         return loss, outputs

@@ -68,6 +68,23 @@ class Bottom_up():
 
         self.criterion = ExLoss(self.embeding_fea_size, self.num_classes, t=10).cuda()
 
+    def make_batch(self, samples):
+        return samples
+        # print(samples)
+        # images=[sample[0] for sample in samples]
+        # images_str=[sample[1] for sample in samples]
+        # pids=[sample[2] for sample in samples]
+        # indexs=[sample[3] for sample in samples]
+        # zero=[sample[4] for sample in samples]
+        # sceneid_str=[sample[5] for sample in samples]
+        # label_to_pairs=[sample[6] for sample in samples]
+        # print('----------')
+        # print(zero)
+        # print(sceneid_str)
+        # print(label_to_pairs)
+        # return images, images_str, pids, indexs, zero,  sceneid_str, label_to_pairs
+        # raise ValueError
+        # imgs, _, pids, indexs, videoid, sceneid, label_to_pairs = inputs
 
     def get_dataloader(self, dataset, training=False):
         normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
@@ -94,6 +111,7 @@ class Bottom_up():
                          transform=transformer, is_training=training, max_frames=self.max_frames),
             batch_size=batch_size, num_workers=self.data_workers,
             shuffle=training, pin_memory=True, drop_last=training)
+            # collate_fn=self.make_batch)
 
         current_status = "Training" if training else "Testing"
         print("Create dataloader for {} with batch_size {}".format(current_status, batch_size))
@@ -368,8 +386,6 @@ def change_to_unlabel(dataset):
             print(videoid, 'RANGE ERROR')
         assert videoid >= 0
         trimmed_dataset.append([imgs, pid, camid, videoid, sceneid, label_to_pairs])
-    # print(trimmed_dataset)
-    # raise ValueError
     index_labels = []
     for idx, data in enumerate(trimmed_dataset):
         data[3] = idx # data[3] is the label of the data array
