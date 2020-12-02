@@ -22,7 +22,7 @@ def extract_features(model, data_loader, print_freq=1, metric=None):
     fcs = OrderedDict()
 
     print("Begin to extract features...")
-    for i, (imgs, fnames, pids, _, _,_) in tqdm(enumerate(data_loader)):
+    for i, (imgs, fnames, pids, _, _,_, _) in tqdm(enumerate(data_loader)):
         _fcs, pool5s = extract_cnn_feature(model, imgs)
         for fname, fc, pool5, pid in zip(fnames, _fcs, pool5s, pids):
             features[fname] = pool5
@@ -46,8 +46,8 @@ def pairwise_distance(features, query=None, gallery=None, metric=None):
         dist = dist.expand(n, n) - 2 * torch.mm(x, x.t())
         return dist
 
-    x = torch.cat([features["".join(f)].unsqueeze(0) for f, _, _, _, _ in query], 0)
-    y = torch.cat([features["".join(f)].unsqueeze(0) for f, _, _, _, _ in gallery], 0)
+    x = torch.cat([features["".join(f)].unsqueeze(0) for f, _, _, _, _,_ in query], 0)
+    y = torch.cat([features["".join(f)].unsqueeze(0) for f, _, _, _, _,_ in gallery], 0)
     m, n = x.size(0), y.size(0)
     x = x.view(m, -1)
     y = y.view(n, -1)
@@ -65,10 +65,10 @@ def evaluate_all(distmat, query=None, gallery=None,
                  query_cams=None, gallery_cams=None,
                  cmc_topk=(1, 5, 10, 20)):
     if query is not None and gallery is not None:
-        query_ids = [pid for _, pid, _, _, _ in query]
-        gallery_ids = [pid for _, pid, _, _,_ in gallery]
-        query_cams = [cam for _, _, cam, _,_ in query]
-        gallery_cams = [cam for _, _, cam, _,_ in gallery]
+        query_ids = [pid for _, pid, _, _, _,_ in query]
+        gallery_ids = [pid for _, pid, _, _, _,_ in gallery]
+        query_cams = [cam for _, _, cam, _, _,_ in query]
+        gallery_cams = [cam for _, _, cam, _, _,_ in gallery]
     else:
         assert (query_ids is not None and gallery_ids is not None
                 and query_cams is not None and gallery_cams is not None)

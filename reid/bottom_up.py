@@ -30,7 +30,7 @@ class Bottom_up():
 
         self.dataset = dataset
         self.u_data = u_data
-        self.u_label = np.array([label for _, label, _, _, _ in u_data])
+        self.u_label = np.array([label for _, label, _, _, _, _ in u_data])
 
         self.dataloader_params = {}
         self.dataloader_params['height'] = 256
@@ -100,6 +100,7 @@ class Bottom_up():
         return data_loader
 
     def train(self, train_data, step, loss, dropout=0.5):
+
         # adjust training epochs and learning rate
         epochs = self.initial_steps if step==0 else self.later_steps
         init_lr = 0.1 if step==0 else 0.01 
@@ -272,10 +273,28 @@ class Bottom_up():
             new_data[3] = label[idx]
             new_train_data.append(new_data)
 
+
+        # get positive, negative pairs
+        label_to_pairs=OrderedDict()
+        array_new_train_data=np.array(new_train_data)
+        for j, sid in enumerate(array_new_train_data[:,4]): array_new_train_data[j,4]=sid[0]
+        for i in range(len(array_new_train_data)):
+            ppid=list((array_new_train_data[i,3]==array_new_train_data[:,3]).nonzero()[0][:])
+            npid=list((array_new_train_data[i,4]==array_new_train_data[:,4]).nonzero()[0][:])
+            npid.remove(i)
+            
+            label_to_pairs[i]=(ppid, npid)
+
+        new_train_data_ = []
+        for i, new_data in enumerate(new_train_data):
+            new_data[5]=label_to_pairs[i]
+            new_train_data_.append(new_data)
+
         num_after_merge = len(np.unique(np.array(label)))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-        return new_train_data, label
+
+        return new_train_data_, label
 
     def generate_average_feature(self, labels):
         #extract feature/classifier
@@ -311,6 +330,7 @@ class Bottom_up():
         #new_classifier = fc_avg.astype(np.float32)
         #self.criterion.V = torch.from_numpy(new_classifier).cuda()
 
+      
         return labels, new_train_data
 
     def get_new_unique_constratint_train_data(self, labels, nums_to_merge, size_penalty):
@@ -342,12 +362,12 @@ def change_to_unlabel(dataset):
     # generate unlabeled set
     trimmed_dataset = []
     init_videoid = int(dataset.train[0][3])
-    for (imgs, pid, camid, videoid, sceneid) in dataset.train:
+    for (imgs, pid, camid, videoid, sceneid, label_to_pairs) in dataset.train:
         videoid = int(videoid) - init_videoid
         if videoid < 0:
             print(videoid, 'RANGE ERROR')
         assert videoid >= 0
-        trimmed_dataset.append([imgs, pid, camid, videoid, sceneid])
+        trimmed_dataset.append([imgs, pid, camid, videoid, sceneid, label_to_pairs])
     # print(trimmed_dataset)
     # raise ValueError
     index_labels = []

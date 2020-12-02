@@ -26,7 +26,7 @@ class Preprocessor(object):
         return self._get_single_item(indices)
 
     def _get_single_item(self, index):
-        images, pid, camid, videoid, sceneid = self.dataset[index]
+        images, pid, camid, videoid, sceneid, label_to_pairs = self.dataset[index]
         image_str = "".join(images)
 
         # random select images if training
@@ -53,4 +53,4 @@ class Preprocessor(object):
         video_frames = torch.stack(video_frames, dim=0)
         pid = int(pid)
 
-        return video_frames, image_str, pid, index, videoid, sceneid
+        return video_frames, image_str, pid, index, videoid, sceneid, label_to_pairs

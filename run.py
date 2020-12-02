@@ -18,14 +18,15 @@ def main(args):
 
     os.mkdir(osp.join(args.logs_dir, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))))
     sys.stdout = Logger(osp.join(args.logs_dir, '%s%s%s_%s%s%s/%s%s%s_%s%s%s.txt'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2), now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))))
-    sys.stdout = Logger(osp.join(args.logs_dir, 'log'+ str(args.merge_percent)+ time.strftime(".%m.%d_%H:%M:%S") + '.txt'))
+    # sys.stdout = Logger(osp.join(args.logs_dir, 'log'+ str(args.merge_percent)+ time.strftime(".%m.%d_%H:%M:%S") + '.txt'))
 
     # get all unlabeled data for training
     dataset_all = datasets.create(args.dataset, osp.join(args.data_dir, args.dataset))
     new_train_data, cluster_id_labels = change_to_unlabel(dataset_all)
     num_train_ids = len(np.unique(np.array(cluster_id_labels)))
     nums_to_merge = int(num_train_ids * args.merge_percent)
-    # nums_to_merge=6
+
+    nums_to_merge=3
 
     BuMain = Bottom_up(model_name=args.arch, batch_size=args.batch_size, 
             num_classes=num_train_ids,
@@ -33,7 +34,6 @@ def main(args):
             u_data=new_train_data, save_path=args.logs_dir, max_frames=args.max_frames,
             embeding_fea_size=args.fea)
 
-    # BuMain.load('logs/PRW_BUformat/20200904_105726/0.pth')
     for step in range(int(1/args.merge_percent)-1):
         
         BuMain.train(new_train_data, step, loss=args.loss) 
@@ -41,10 +41,10 @@ def main(args):
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')
-        # cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
-        cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        # cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
-
+        if step ==1: raise ValueError
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='bottom-up clustering')
@@ -56,8 +56,14 @@ if __name__ == '__main__':
     working_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument('--data_dir', type=str, metavar='PATH',
                         default=os.path.join(working_dir,'../datasets'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/PRW_BUformat'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/cosine_similarity'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
+                        default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss')
     parser.add_argument('-m', '--momentum', type=float, default=0.5)
