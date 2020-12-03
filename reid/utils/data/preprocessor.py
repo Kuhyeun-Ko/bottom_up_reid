@@ -23,7 +23,6 @@ class Preprocessor(object):
     def __getitem__(self, indices):
         if isinstance(indices, (tuple, list)):
             return [self._get_single_item(index) for index in indices]
-        print('self._get_single_item(indices): ', self._get_single_item(indices))
         return self._get_single_item(indices)
 
     def _get_single_item(self, index):

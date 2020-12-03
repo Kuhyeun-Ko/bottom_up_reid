@@ -32,43 +32,40 @@ class ExLoss(nn.Module):
         self.weight = weight
         self.register_buffer('V', torch.zeros(num_classes, num_features))
 
-    def forward(self, inputs, targets, label_to_pairs):
+    def forward(self, inputs, targets, label_to_pairs, indexs):
         outputs = Exclusive(self.V)(inputs, targets) * self.t
         bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
 
-        # # hard negative mining
-        # hn_loss=[]
-        # sim=inputs.mm(inputs.t())
-        # print('in ExLoss')
-        # print(sim.shape)
-        # for i in range(len(sim)):
-        #     # hard positive
-        #     print(label_to_pairs)
-        #     print(label_to_pairs[i])
-        #     print(label_to_pairs[i][0])
-        #     psims=sim[i,label_to_pairs[i][0]]
-        #     print(psims)
-        #     hpsims=torch.min(psims)
-        #     print(hpsims)
+        # hard negative mining
+        h_loss=[]
+        normalized_inputs=F.normalize(inputs, dim=1)
+        sim=normalized_inputs.mm(normalized_inputs.t())
+        for i in range(len(sim)):
 
-        #     # hard negative
-        #     nsims=sim[i,label_to_pairs[i][1]]
-        #     print(nsims)
-        #     thrd=hpsims-0.3
-        #     hnsims=nsims[thrd<nsims]
+            # hard positive
+            psims_idx=[]
+            for pidx in label_to_pairs[i][0]: psims_idx.append((indexs==pidx).nonzero()[0])
+            psims=sim[i,psims_idx]
+            hpsims=torch.tensor([torch.min(psims)]).cuda()
+            thrd=hpsims.clone()
             
-        #     print(psims)
-        #     print(nsims)
-        #     print(hpsims)
-        #     print(hnsims)
-        #     print(thrd)
-        #     hn_loss_=F.binary_cross_entropy(hpsims, torch.ones(hpsims.shape))+F.binary_cross_entropy(hnsims, -torch.ones(hnsims.shape))
-        #     hn_loss.append(hn_loss_)
-        #     raise ValueError
+            # hard negative
+            nsims_idx=[]
+            for nidx in label_to_pairs[i][1]: nsims_idx.append((indexs==nidx).nonzero()[0])
+            nsims=sim[i,nsims_idx]
+            thrd=torch.tensor(thrd-0.3).cuda()
+            hnsims=nsims[thrd<nsims]
+            
+            # calculate loss
+            hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
+            if hnsims.shape[0]==0: hn_loss=torch.tensor([0]).cuda()
+            else: hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
+            h_loss_=hp_loss+hn_loss
+            h_loss.append(h_loss_)
 
-        # # hn_loss = 
+        h_loss= sum(h_loss)/len(h_loss)
 
         # hard negative mining with table self.V
-        loss=bu_loss
+        loss=bu_loss+h_loss
 
         return loss, outputs

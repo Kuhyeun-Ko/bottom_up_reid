@@ -9,6 +9,7 @@ from reid.utils.logging import Logger
 import os.path as osp
 from torch.backends import cudnn
 from datetime import datetime
+import warnings
 
 def main(args):
     cudnn.benchmark = True
@@ -49,6 +50,8 @@ def main(args):
         if step ==1: raise ValueError
 
 if __name__ == '__main__':
+    warnings.filterwarnings("ignore")
+
     parser = argparse.ArgumentParser(description='bottom-up clustering')
     parser.add_argument('-d', '--dataset', type=str, default='PRW_BUformat',
                         choices=datasets.names())

@@ -38,8 +38,8 @@ class BaseTrainer(object):
         for i, inputs in enumerate(data_loader):
             data_time.update(time.time() - end)
 
-            inputs, targets, sceneid, label_to_pairs = self._parse_data(inputs)
-            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs)
+            inputs, targets, sceneid, label_to_pairs, indexs = self._parse_data(inputs)
+            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs)
     
             losses.update(loss.item(), targets.size(0))
             precisions.update(prec1, targets.size(0))
@@ -75,19 +75,16 @@ class BaseTrainer(object):
 
 class Trainer(BaseTrainer):
     def _parse_data(self, inputs):
-        print('inputs: ', inputs)
         imgs, _, pids, indexs, videoid, sceneid, label_to_pairs = inputs
-        print('videoid: ', videoid)
-        raise ValueError
         inputs = Variable(imgs, requires_grad=False)
         targets = Variable(videoid.cuda())
-        return inputs, targets, sceneid, label_to_pairs
+        return inputs, targets, sceneid, label_to_pairs, indexs
 
-    def _forward(self, inputs, targets, sceneid, label_to_pairs):
+    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs):
         # output is feature
         outputs, _ = self.model(inputs)
         # output is similarity
-        loss, outputs = self.criterion(outputs, targets, label_to_pairs)
+        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs)
         prec, = accuracy(outputs.data, targets.data)
         prec = prec[0]
         return loss, prec
