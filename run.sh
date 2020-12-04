@@ -6,8 +6,8 @@ dataset=PRW_BUformat
 
 # batchSize=128
 # batchSize=64
-# batchSize=20
-batchSize=16
+batchSize=20
+# batchSize=16
 
 # merge_percent=0.07
 # merge_percent=0.03
