@@ -293,6 +293,7 @@ class Bottom_up():
         for j, sid in enumerate(array_new_train_data[:,4]): array_new_train_data[j,4]=sid[0]
         for i in range(len(array_new_train_data)):
             ppid=list((array_new_train_data[i,3]==array_new_train_data[:,3]).nonzero()[0][:])
+            ppid.remove(i)
             npid=list((array_new_train_data[i,4]==array_new_train_data[:,4]).nonzero()[0][:])
             npid.remove(i)
             

@@ -73,11 +73,11 @@ class Dataset(object):
             for fname_list, sname_list in zip(train_fnames, train_snames):
                 name = osp.splitext(fname_list[0])[0]
                 pid, cam, vid,  _ = map(int, name.split('_'))
-                self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list]), [[vid], []] ))
+                self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list]), [[], []] ))
 
             # khko
-            self.train=self.train[:20]
-            self.query=self.query[:20]
+            # self.train=self.train[:6]
+            # self.query=self.query[:6]
             # self.gallery=self.gallery[:15]
 
         if verbose:
