@@ -70,14 +70,13 @@ class Bottom_up():
 
     def make_batch(self, samples):
         images=torch.empty(size=(len(samples), 1, 3, 256, 128))
-        for i, sample in enumerate(samples):
-            images[i,...]=sample[0]
-
+        for i, sample in enumerate(samples): images[i,...]=sample[0]
         images_str=[sample[1] for sample in samples]
         pids=torch.tensor([sample[2] for sample in samples])
         indexs=torch.tensor([sample[3] for sample in samples])
         videoid=torch.tensor([sample[4] for sample in samples])
         sceneid_str=[sample[5] for sample in samples]
+        # label_to_pairs=np.array([sample[6] for sample in samples])
         label_to_pairs=[sample[6] for sample in samples]
 
         return images, images_str, pids, indexs, videoid,  sceneid_str, label_to_pairs
@@ -297,7 +296,7 @@ class Bottom_up():
             npid=list((array_new_train_data[i,4]==array_new_train_data[:,4]).nonzero()[0][:])
             npid.remove(i)
             
-            label_to_pairs[i]=(ppid, npid)
+            label_to_pairs[i]=[ppid, npid]
 
         new_train_data_ = []
         for i, new_data in enumerate(new_train_data):

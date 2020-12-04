@@ -45,6 +45,7 @@ def main(args):
         cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
         # cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
+        # if step==1: raise ValueError
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
@@ -64,10 +65,10 @@ if __name__ == '__main__':
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/cosine_similarity'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs/tmp'))
+                        default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss')
     parser.add_argument('-m', '--momentum', type=float, default=0.5)
