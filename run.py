@@ -27,7 +27,7 @@ def main(args):
     num_train_ids = len(np.unique(np.array(cluster_id_labels)))
     nums_to_merge = int(num_train_ids * args.merge_percent)
 
-    nums_to_merge=3
+    # nums_to_merge=3
 
     BuMain = Bottom_up(model_name=args.arch, batch_size=args.batch_size, 
             num_classes=num_train_ids,
@@ -42,12 +42,9 @@ def main(args):
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')
-        print('before: ', cluster_id_labels)
         cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
-        print('after: ', cluster_id_labels)
         # cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
-        if step ==1: raise ValueError
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
@@ -67,6 +64,8 @@ if __name__ == '__main__':
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/cosine_similarity'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
                         default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
