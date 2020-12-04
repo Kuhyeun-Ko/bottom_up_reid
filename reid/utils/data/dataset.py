@@ -76,8 +76,8 @@ class Dataset(object):
                 self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list]), [[], []] ))
 
             # khko
-            # self.train=self.train[:6]
-            # self.query=self.query[:6]
+            # self.train=self.train[:20]
+            # self.query=self.query[:20]
             # self.gallery=self.gallery[:15]
 
         if verbose:

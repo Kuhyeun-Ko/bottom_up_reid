@@ -27,7 +27,7 @@ def main(args):
     num_train_ids = len(np.unique(np.array(cluster_id_labels)))
     nums_to_merge = int(num_train_ids * args.merge_percent)
 
-    # nums_to_merge=1
+    # nums_to_merge=3
 
     BuMain = Bottom_up(model_name=args.arch, batch_size=args.batch_size, 
             num_classes=num_train_ids,
