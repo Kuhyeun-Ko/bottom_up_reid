@@ -39,6 +39,13 @@ class ExLoss(nn.Module):
         self.w_th=3.
         self.p_margin=0.2
         self.n_margin=0.3
+
+        self.num_pos=0
+        self.num_hpos=0
+        self.num_neg=0
+        self.num_hneg=0
+        self.num_tneg=0
+        self.num_thneg=0
         print('use_prior: %s, w_bu: %.2f, w_h: %.2f, w_th: %.2f, p_margin: %.2f, n_margin: %.2f'%(self.use_prior, self.w_bu, self.w_h, self.w_th, self.p_margin, self.n_margin))
 
     def forward(self, inputs, targets, label_to_pairs, indexs):
@@ -72,6 +79,7 @@ class ExLoss(nn.Module):
         for i, pairs in enumerate(label_to_pairs): 
             for ppair in pairs[0]:
                 if len((ppair==indexs).nonzero())!=0: psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
+        
         # threshold
         thd_psims=psims.clone()
         n_thrds=torch.min(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
@@ -96,6 +104,11 @@ class ExLoss(nn.Module):
 
         # loss calculate ovelapped
         h_loss=hp_loss+hn_loss
+
+        self.num_pos+=len((psims!=2).nonzero())
+        self.num_hpos+=hpsims.shape[0]
+        self.num_neg+=len((nsims!=-2).nonzero())
+        self.num_hneg+=hnsims.shape[0]
 
         return h_loss
 
@@ -124,7 +137,10 @@ class ExLoss(nn.Module):
 
             # loss calculate ovelapped
             th_loss=hn_loss
-        
+
+            self.num_tneg+=len((nsims!=-2).nonzero())
+            self.num_thneg+=hnsims.shape[0]
+
         else: th_loss=torch.zeros(1).cuda()
 
         return th_loss
@@ -166,6 +182,11 @@ class ExLoss(nn.Module):
         # loss calculate ovelapped
         h_loss=hp_loss+hn_loss
 
+        self.num_pos+=len((psims!=2).nonzero())
+        self.num_hpos+=hpsims.shape[0]
+        self.num_neg+=len((nsims!=-2).nonzero())
+        self.num_hneg+=hnsims.shape[0]
+
         return h_loss
 
     ## hard negative mining with table self.V no prior
@@ -189,6 +210,9 @@ class ExLoss(nn.Module):
 
             # loss calculate ovelapped
             th_loss=hn_loss
+
+            self.num_tneg+= nsims.shape[0]*nsims.shape[1]
+            self.num_thneg+=hnsims.shape[0]
         
         else: th_loss=torch.zeros(1).cuda()
 

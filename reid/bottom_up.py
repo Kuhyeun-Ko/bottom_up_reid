@@ -148,6 +148,7 @@ class Bottom_up():
         trainer = Trainer(self.model, self.criterion, fixed_layer=self.fixed_layer)
         for epoch in range(epochs):
             adjust_lr(epoch, step_size)
+            # trainer.train(epoch, dataloader, optimizer)
             trainer.train(epoch, dataloader, optimizer, print_freq=max(5, len(dataloader) // 30 * 10))
 
     def get_feature(self, dataset):
@@ -375,15 +376,26 @@ def change_to_unlabel(dataset):
     # generate unlabeled set
     trimmed_dataset = []
     init_videoid = int(dataset.train[0][3])
-    for (imgs, pid, camid, videoid, sceneid, label_to_pairs) in dataset.train:
+    for (imgs, pid, camid, videoid, sceneid, _) in dataset.train:
         videoid = int(videoid) - init_videoid
         if videoid < 0:
             print(videoid, 'RANGE ERROR')
         assert videoid >= 0
-        trimmed_dataset.append([imgs, pid, camid, videoid, sceneid, label_to_pairs])
+        trimmed_dataset.append([imgs, pid, camid, videoid, sceneid])
     index_labels = []
     for idx, data in enumerate(trimmed_dataset):
         data[3] = idx # data[3] is the label of the data array
         index_labels.append(data[3])  # index
+
+    # negative pair
+    label_to_pairs=OrderedDict()
+    array_trimmed_dataset=np.array(trimmed_dataset)
+    for j, sid in enumerate(array_trimmed_dataset[:,4]): array_trimmed_dataset[j,4]=sid[0]
+    for i in range(len(array_trimmed_dataset)):
+        npid=list((array_trimmed_dataset[i,4]==array_trimmed_dataset[:,4]).nonzero()[0][:])
+        npid.remove(i)
+        label_to_pairs[i]=[[], npid]
     
+    for i, traimmed_data in enumerate(trimmed_dataset): traimmed_data.append(label_to_pairs[i])
+
     return trimmed_dataset, index_labels
