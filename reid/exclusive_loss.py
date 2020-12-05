@@ -77,10 +77,10 @@ class ExLoss(nn.Module):
         # hard positive
         psims=2*torch.ones(sims.shape).cuda()
         for i, (pairs, target) in enumerate(zip(label_to_pairs, targets)): 
+            if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
             for ppair in pairs[0]:
                 if len((ppair==indexs).nonzero())!=0: 
                     psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
-                    if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
 
         # threshold
         thd_psims=psims.clone()
@@ -97,6 +97,7 @@ class ExLoss(nn.Module):
         # hard negative
         nsims=-2*torch.ones(sims.shape).cuda()
         for i, pairs in enumerate(label_to_pairs): 
+            if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
             for npair in pairs[1]:
                 if len((npair==indexs).nonzero())!=0: nsims[i, (npair==indexs).nonzero().item()]=sims[i, (npair==indexs).nonzero().item()]
         hnsims=nsims[nsims>n_thrds]
@@ -175,7 +176,9 @@ class ExLoss(nn.Module):
 
         # hard negative
         nsims=-2*torch.ones(sims.shape).cuda()
-        for i, (target, sim) in enumerate(zip(targets, sims)): nsims[i,target!=targets]=sim[target!=targets]
+        for i, (target, sim) in enumerate(zip(targets, sims)): 
+            nsims[i,target!=targets]=sim[target!=targets]
+            if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
         # nsims=nsims[~torch.eye(nsims.shape[0]).type(torch.bool)].reshape(nsims.shape[0], -1)
         hnsims=nsims[nsims>n_thrds]
 
