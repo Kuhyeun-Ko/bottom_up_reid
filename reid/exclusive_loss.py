@@ -54,7 +54,7 @@ class ExLoss(nn.Module):
         bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
 
         if self.use_prior:
-            h_loss = self.forward_hard_negative_mining(inputs, label_to_pairs, indexs)
+            h_loss = self.forward_hard_negative_mining(inputs, targets, label_to_pairs, indexs)
             th_loss = self.forward_hard_negative_mining_with_table(inputs, targets, label_to_pairs, indexs)
         else:
             h_loss = self.hard_negative_mining(inputs, targets, label_to_pairs, indexs)
@@ -68,7 +68,7 @@ class ExLoss(nn.Module):
 
 
     ## hard negative mining
-    def forward_hard_negative_mining(self, inputs, label_to_pairs, indexs):
+    def forward_hard_negative_mining(self, inputs, targets, label_to_pairs, indexs):
 
         h_loss=[]
         normalized_inputs=F.normalize(inputs, dim=1)
@@ -76,10 +76,12 @@ class ExLoss(nn.Module):
 
         # hard positive
         psims=2*torch.ones(sims.shape).cuda()
-        for i, pairs in enumerate(label_to_pairs): 
+        for i, (pairs, target) in enumerate(zip(label_to_pairs, targets)): 
             for ppair in pairs[0]:
-                if len((ppair==indexs).nonzero())!=0: psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
-        
+                if len((ppair==indexs).nonzero())!=0: 
+                    psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
+                    if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
+
         # threshold
         thd_psims=psims.clone()
         n_thrds=torch.min(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
@@ -155,8 +157,10 @@ class ExLoss(nn.Module):
 
         # hard positive
         psims=2*torch.ones(sims.shape).cuda()
-        for i, (target, sim) in enumerate(zip(targets, sims)): psims[i,target==targets]=sim[target==targets]
-        psims=psims[~torch.eye(psims.shape[0]).type(torch.bool)].reshape(psims.shape[0], -1)
+        for i, (target, sim) in enumerate(zip(targets, sims)): 
+            psims[i,target==targets]=sim[target==targets]
+            if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
+        # psims=psims[~torch.eye(psims.shape[0]).type(torch.bool)].reshape(psims.shape[0], -1)
 
         # threshold
         thd_psims=psims.clone()
@@ -166,14 +170,13 @@ class ExLoss(nn.Module):
         p_thrds=torch.max(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
         p_thrds-=self.p_margin
         hpsims=psims[psims<p_thrds]
-
         if hpsims.shape[0]==0: hp_loss=torch.zeros(1).cuda()
         else: hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
 
         # hard negative
         nsims=-2*torch.ones(sims.shape).cuda()
         for i, (target, sim) in enumerate(zip(targets, sims)): nsims[i,target!=targets]=sim[target!=targets]
-        nsims=nsims[~torch.eye(nsims.shape[0]).type(torch.bool)].reshape(nsims.shape[0], -1)
+        # nsims=nsims[~torch.eye(nsims.shape[0]).type(torch.bool)].reshape(nsims.shape[0], -1)
         hnsims=nsims[nsims>n_thrds]
 
         if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()

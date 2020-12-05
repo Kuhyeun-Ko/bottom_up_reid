@@ -55,17 +55,6 @@ class BaseTrainer(object):
             end = time.time()
 
             if (i + 1) % print_freq == 0:
-                print('Epoch: [{}][{}/{}]\t'
-                      'Time {:.3f} ({:.3f})\t'
-                      'Data {:.3f} ({:.3f})\t'
-                      'Loss {:.3f} ({:.3f})\t'
-                      'Prec {:.2%} ({:.2%})\t'
-                      .format(epoch, i + 1, len(data_loader),
-                              batch_time.val, batch_time.avg,
-                              data_time.val, data_time.avg,
-                              losses.val, losses.avg,
-                              precisions.val, precisions.avg))
-
                 if self.criterion.num_pos!=0: pos_ratio=(float(self.criterion.num_hpos)/float(self.criterion.num_pos))
                 else: pos_ratio=0
                 if self.criterion.num_neg!=0: neg_ratio=(float(self.criterion.num_hneg)/float(self.criterion.num_neg))
@@ -81,6 +70,17 @@ class BaseTrainer(object):
                 self.criterion.num_hneg=0
                 self.criterion.num_tneg=0
                 self.criterion.num_thneg=0
+                
+                print('Epoch: [{}][{}/{}]\t'
+                      'Time {:.3f} ({:.3f})\t'
+                      'Data {:.3f} ({:.3f})\t'
+                      'Loss {:.3f} ({:.3f})\t'
+                      'Prec {:.2%} ({:.2%})\t'
+                      .format(epoch, i + 1, len(data_loader),
+                              batch_time.val, batch_time.avg,
+                              data_time.val, data_time.avg,
+                              losses.val, losses.avg,
+                              precisions.val, precisions.avg))
                 
 
     def _parse_data(self, inputs):
