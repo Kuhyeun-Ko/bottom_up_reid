@@ -33,11 +33,11 @@ class ExLoss(nn.Module):
         self.weight = weight
         self.register_buffer('V', torch.zeros(num_classes, num_features))
         
-        self.use_prior=False
+        self.use_prior=True
         self.w_bu=1.
         self.w_h=1.
-        self.w_th=3.
-        self.p_margin=0.2
+        self.w_th=1.
+        self.p_margin=0.1
         self.n_margin=0.3
 
         self.num_pos=0
@@ -75,18 +75,16 @@ class ExLoss(nn.Module):
         sims=normalized_inputs.mm(normalized_inputs.t())
 
         # hard positive
-        psims=2*torch.ones(sims.shape).cuda()
+        psims=10*torch.ones(sims.shape).cuda()
         for i, (pairs, target) in enumerate(zip(label_to_pairs, targets)): 
             if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
-            for ppair in pairs[0]:
-                if len((ppair==indexs).nonzero())!=0: 
-                    psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
-
+            for ppair in pairs[0]: if len((ppair==indexs).nonzero())!=0:  psims[i, (ppair==indexs).nonzero().item()]=sims[i, (ppair==indexs).nonzero().item()]
+       
         # threshold
         thd_psims=psims.clone()
         n_thrds=torch.min(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
         n_thrds-=self.n_margin
-        thd_psims[thd_psims==2]=-2
+        thd_psims[thd_psims==10]=-10
         p_thrds=torch.max(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
         p_thrds-=self.p_margin
         hpsims=psims[psims<p_thrds]
@@ -95,9 +93,9 @@ class ExLoss(nn.Module):
         else: hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
 
         # hard negative
-        nsims=-2*torch.ones(sims.shape).cuda()
+        nsims=-10*torch.ones(sims.shape).cuda()
         for i, pairs in enumerate(label_to_pairs): 
-            if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
+            # if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
             for npair in pairs[1]:
                 if len((npair==indexs).nonzero())!=0: nsims[i, (npair==indexs).nonzero().item()]=sims[i, (npair==indexs).nonzero().item()]
         hnsims=nsims[nsims>n_thrds]
@@ -108,9 +106,9 @@ class ExLoss(nn.Module):
         # loss calculate ovelapped
         h_loss=hp_loss+hn_loss
 
-        self.num_pos+=len((psims!=2).nonzero())
+        self.num_pos+=len((psims!=10).nonzero())
         self.num_hpos+=hpsims.shape[0]
-        self.num_neg+=len((nsims!=-2).nonzero())
+        self.num_neg+=len((nsims!=-10).nonzero())
         self.num_hneg+=hnsims.shape[0]
 
         return h_loss
@@ -129,7 +127,7 @@ class ExLoss(nn.Module):
             
             # hard negative
             nsims_=self.V[targets].mm(self.V.t()) 
-            nsims=-2*torch.ones(nsims_.shape).cuda()
+            nsims=-10*torch.ones(nsims_.shape).cuda()
             for i, pairs in enumerate(label_to_pairs): 
                 for npair in pairs[1]:
                     if len((npair==indexs).nonzero())!=0: nsims[i, (npair==indexs).nonzero().item()]=nsims_[i, (npair==indexs).nonzero().item()]
@@ -141,7 +139,7 @@ class ExLoss(nn.Module):
             # loss calculate ovelapped
             th_loss=hn_loss
 
-            self.num_tneg+=len((nsims!=-2).nonzero())
+            self.num_tneg+=len((nsims!=-10).nonzero())
             self.num_thneg+=hnsims.shape[0]
 
         else: th_loss=torch.zeros(1).cuda()
@@ -157,7 +155,7 @@ class ExLoss(nn.Module):
         sims=normalized_inputs.mm(normalized_inputs.t())
 
         # hard positive
-        psims=2*torch.ones(sims.shape).cuda()
+        psims=10*torch.ones(sims.shape).cuda()
         for i, (target, sim) in enumerate(zip(targets, sims)): 
             psims[i,target==targets]=sim[target==targets]
             if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
@@ -167,7 +165,7 @@ class ExLoss(nn.Module):
         thd_psims=psims.clone()
         n_thrds=torch.min(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
         n_thrds-=self.n_margin
-        thd_psims[thd_psims==2]=-2
+        thd_psims[thd_psims==10]=-10
         p_thrds=torch.max(thd_psims, dim=1, keepdim=True).values.repeat(1, thd_psims.shape[1])
         p_thrds-=self.p_margin
         hpsims=psims[psims<p_thrds]
@@ -175,10 +173,10 @@ class ExLoss(nn.Module):
         else: hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
 
         # hard negative
-        nsims=-2*torch.ones(sims.shape).cuda()
+        nsims=-10*torch.ones(sims.shape).cuda()
         for i, (target, sim) in enumerate(zip(targets, sims)): 
             nsims[i,target!=targets]=sim[target!=targets]
-            if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
+            # if normalized_inputs.mm(self.V.t())[i, target] !=0: nsims[i, i]= normalized_inputs.mm(self.V.t())[i, target]
         # nsims=nsims[~torch.eye(nsims.shape[0]).type(torch.bool)].reshape(nsims.shape[0], -1)
         hnsims=nsims[nsims>n_thrds]
 
@@ -188,9 +186,9 @@ class ExLoss(nn.Module):
         # loss calculate ovelapped
         h_loss=hp_loss+hn_loss
 
-        self.num_pos+=len((psims!=2).nonzero())
+        self.num_pos+=len((psims!=10).nonzero())
         self.num_hpos+=hpsims.shape[0]
-        self.num_neg+=len((nsims!=-2).nonzero())
+        self.num_neg+=len((nsims!=-10).nonzero())
         self.num_hneg+=hnsims.shape[0]
 
         return h_loss
