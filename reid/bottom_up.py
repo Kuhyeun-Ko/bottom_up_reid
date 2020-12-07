@@ -17,6 +17,7 @@ import random
 import pickle as pkl
 from reid.exclusive_loss import ExLoss
 import os
+import json
 
 class Bottom_up():
     def __init__(self, model_name, batch_size, num_classes, dataset, u_data, save_path, embeding_fea_size=1024,
@@ -27,6 +28,7 @@ class Bottom_up():
         self.data_dir = dataset.images_dir
         self.is_video = dataset.is_video
         self.save_path = save_path
+        # self.fp=open(save_path+'/clustering.txt', 'wb')
 
         self.dataset = dataset
         self.u_data = u_data
@@ -61,6 +63,7 @@ class Bottom_up():
             self.fixed_layer = False
             self.frames_per_video = 1
             self.later_steps = 2
+            # self.later_steps = 6
 
         model = models.create(self.model_name, dropout=self.dropout, 
                               embeding_fea_size=self.embeding_fea_size, fixed_layer=self.fixed_layer)
@@ -121,6 +124,7 @@ class Bottom_up():
 
         """ create model and dataloader """
         dataloader = self.get_dataloader(train_data, training=True)
+        all_label_to_clusterid=[ train_data_[3] for train_data_ in train_data]
 
         # the base parameters for the backbone (e.g. ResNet50)
         base_param_ids = set(map(id, self.model.module.CNN.base.parameters()))
@@ -148,8 +152,7 @@ class Bottom_up():
         trainer = Trainer(self.model, self.criterion, fixed_layer=self.fixed_layer)
         for epoch in range(epochs):
             adjust_lr(epoch, step_size)
-            # trainer.train(epoch, dataloader, optimizer)
-            trainer.train(epoch, dataloader, optimizer, print_freq=max(5, len(dataloader) // 30 * 10))
+            trainer.train(epoch, dataloader, optimizer, all_label_to_clusterid, print_freq=max(5, len(dataloader) // 30 * 10))
 
     def get_feature(self, dataset):
         dataloader = self.get_dataloader(dataset, training=False)
@@ -306,9 +309,11 @@ class Bottom_up():
             new_train_data_.append(new_data)
 
         num_after_merge = len(np.unique(np.array(label)))
+
+        # json.dump(list(map(int,label_to_pairs)), open(self.save_path+'/clustering.txt','w'))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-
+        print('Clustering results: ', label_to_pairs)
         return new_train_data_, label
 
     def generate_average_feature(self, labels):

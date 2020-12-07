@@ -15,7 +15,7 @@ class BaseTrainer(object):
         self.criterion = criterion
         self.fixed_layer = fixed_layer
 
-    def train(self, epoch, data_loader, optimizer, print_freq=1):
+    def train(self, epoch, data_loader, optimizer, all_label_to_clusterid, print_freq=1):
         self.model.train()
 
         if self.fixed_layer:
@@ -39,7 +39,7 @@ class BaseTrainer(object):
             data_time.update(time.time() - end)
 
             inputs, targets, sceneid, label_to_pairs, indexs = self._parse_data(inputs)
-            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs)
+            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid)
     
             losses.update(loss.item(), targets.size(0))
             precisions.update(prec1, targets.size(0))
@@ -53,7 +53,6 @@ class BaseTrainer(object):
 
             batch_time.update(time.time() - end)
             end = time.time()
-
             if (i + 1) % print_freq == 0:
                 if self.criterion.num_pos!=0: pos_ratio=(float(self.criterion.num_hpos)/float(self.criterion.num_pos))
                 else: pos_ratio=0
@@ -97,11 +96,11 @@ class Trainer(BaseTrainer):
         targets = Variable(videoid.cuda())
         return inputs, targets, sceneid, label_to_pairs, indexs
 
-    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs):
+    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid):
         # output is feature
         outputs, _ = self.model(inputs)
         # output is similarity
-        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs)
+        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs, all_label_to_clusterid)
         prec, = accuracy(outputs.data, targets.data)
         prec = prec[0]
         return loss, prec

@@ -19,7 +19,6 @@ def main(args):
 
     os.mkdir(osp.join(args.logs_dir, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))))
     sys.stdout = Logger(osp.join(args.logs_dir, '%s%s%s_%s%s%s/%s%s%s_%s%s%s.txt'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2), now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))))
-    # sys.stdout = Logger(osp.join(args.logs_dir, 'log'+ str(args.merge_percent)+ time.strftime(".%m.%d_%H:%M:%S") + '.txt'))
 
     # get all unlabeled data for training
     dataset_all = datasets.create(args.dataset, osp.join(args.data_dir, args.dataset))
@@ -32,7 +31,8 @@ def main(args):
     BuMain = Bottom_up(model_name=args.arch, batch_size=args.batch_size, 
             num_classes=num_train_ids,
             dataset=dataset_all,
-            u_data=new_train_data, save_path=args.logs_dir, max_frames=args.max_frames,
+            u_data=new_train_data, save_path=osp.join(args.logs_dir, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))),
+            max_frames=args.max_frames,
             embeding_fea_size=args.fea)
 
     for step in range(int(1/args.merge_percent)-1):
@@ -64,10 +64,10 @@ if __name__ == '__main__':
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat/cosine_similarity'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs/tmp'))
+                        default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss')
     parser.add_argument('-m', '--momentum', type=float, default=0.5)
