@@ -60,12 +60,14 @@ class BaseTrainer(object):
                 else: neg_ratio=0
                 if self.criterion.num_tneg!=0: tneg_ratio=(float(self.criterion.num_thneg)/float(self.criterion.num_tneg))
                 else: tneg_ratio=0
-                print('hard pos(%d)/pos(%d): %.2f, / hard neg(%d)/neg(%d): %.2f'%(self.criterion.num_hpos,self.criterion.num_pos,pos_ratio,self.criterion.num_hneg, self.criterion.num_neg,neg_ratio))
+                print('hard pos(%d)/pos((%d)%d): %.2f, / hard neg(%d)/neg((%d)%d): %.2f'%(self.criterion.num_hpos,self.criterion.num_pos_notable, self.criterion.num_pos,pos_ratio,self.criterion.num_hneg, self.criterion.num_neg_notable, self.criterion.num_neg, neg_ratio))
                 print('table hard neg(%d)/neg(%d): %.2f'%(self.criterion.num_thneg, self.criterion.num_tneg,tneg_ratio))
                 
                 self.criterion.num_pos=0
+                self.criterion.num_pos_notable=0
                 self.criterion.num_hpos=0
                 self.criterion.num_neg=0
+                self.criterion.num_neg_notable=0
                 self.criterion.num_hneg=0
                 self.criterion.num_tneg=0
                 self.criterion.num_thneg=0

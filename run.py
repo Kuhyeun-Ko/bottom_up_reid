@@ -38,7 +38,7 @@ def main(args):
     for step in range(int(1/args.merge_percent)-1):
         
         BuMain.train(new_train_data, step, loss=args.loss) 
-        BuMain.evaluate(dataset_all.query, dataset_all.gallery)
+        # BuMain.evaluate(dataset_all.query, dataset_all.gallery)
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')

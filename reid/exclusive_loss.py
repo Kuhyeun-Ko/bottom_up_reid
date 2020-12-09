@@ -34,15 +34,17 @@ class ExLoss(nn.Module):
         self.register_buffer('V', torch.zeros(num_classes, num_features))
         
         self.use_prior=True
-        self.w_bu=0.
-        self.w_h=0.
+        self.w_bu=1.
+        self.w_h=1.
         self.w_th=1.
         self.p_margin=0.
         self.n_margin=2.
 
         self.num_pos=0
+        self.num_pos_notable=0
         self.num_hpos=0
         self.num_neg=0
+        self.num_neg_notable=0
         self.num_hneg=0
         self.num_tneg=0
         self.num_thneg=0
@@ -54,11 +56,12 @@ class ExLoss(nn.Module):
         bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
 
         if self.use_prior:
-            h_loss = self.forward_hard_negative_mining(inputs, targets, label_to_pairs, indexs)
+            h_loss = self.forward_hard_negative_mining(inputs, targets, label_to_pairs, indexs, all_label_to_clusterid)
             th_loss = self.forward_hard_negative_mining_with_table(inputs, targets, label_to_pairs, indexs, all_label_to_clusterid)
         else:
             h_loss = self.hard_negative_mining(inputs, targets, label_to_pairs, indexs)
             th_loss = self.hard_negative_mining_with_table(inputs, targets, label_to_pairs, indexs)
+            raise ValueError
 
         # loss=bu_loss
         # loss=bu_loss+h_loss
@@ -68,19 +71,22 @@ class ExLoss(nn.Module):
 
 
     ## hard negative mining
-    def forward_hard_negative_mining(self, inputs, targets, label_to_pairs, indexs):
+    def forward_hard_negative_mining(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid):
 
         h_loss=[]
         normalized_inputs=F.normalize(inputs, dim=1)
         sims=normalized_inputs.mm(normalized_inputs.t())
+        tsims=normalized_inputs.mm(self.V.t())
 
         # hard positive
         psims=[[] for i in range(sims.shape[0])]
         for i, (pairs, target) in enumerate(zip(label_to_pairs, targets)): 
-            if normalized_inputs.mm(self.V.t())[i, target] !=0: psims[i].append(normalized_inputs.mm(self.V.t())[i, target])
+            if tsims[i, target] !=0: psims[i].append(tsims[i, target])
             for ppair in pairs[0]: 
                 if len((ppair==indexs).nonzero())!=0:  
-                    for index in [(ppair==indexs).nonzero().item()]: psims[i].append(sims[i, index])
+                    for index in [(ppair==indexs).nonzero().item()]: 
+                        psims[i].append(sims[i, index])
+                        self.num_pos_notable+=1
        
         # threshold
         n_thrds=[ min(psim or [3]) for psim in psims]
@@ -98,8 +104,11 @@ class ExLoss(nn.Module):
         nsims=[[] for i in range(sims.shape[0])]
         for i, pairs in enumerate(label_to_pairs): 
             for npair in pairs[1]:
+                nsims[i].append(tsims[i, all_label_to_clusterid[npair]])
                 if len((npair==indexs).nonzero())!=0: 
-                    for index in [(npair==indexs).nonzero().item()]: nsims[i].append(sims[i, index])
+                    for index in [(npair==indexs).nonzero().item()]: 
+                        nsims[i].append(sims[i, index])
+                        self.num_neg_notable+=1
         hnsims=[ list(filter(lambda x: ((x>n_thrds[i])& (x<0.999999)), nsim)) for i, nsim in enumerate(nsims)]
         hnsims=sum(hnsims, [])
         hnsims=torch.tensor(hnsims).cuda()
@@ -135,8 +144,9 @@ class ExLoss(nn.Module):
             tsims=self.V[targets].mm(self.V.t()) 
             nsims=[[] for i in range(tsims.shape[0])]
             for i, pairs in enumerate(label_to_pairs): 
-                for npair in pairs[1]: 
-                    nsims[i].append(sims[i, all_label_to_clusterid[npair]])
+                all_label_to_clusterid_=list(set([ clusterid for i, clusterid in enumerate(all_label_to_clusterid) if i in pairs[1]]))
+                for clusterid_ in all_label_to_clusterid_: 
+                    nsims[i].append(tsims[i, clusterid_])
             hnsims=[ list(filter(lambda x: ((x>n_thrds[i]) & (x<0.999999)), nsim)) for i, nsim in enumerate(nsims)]
             hnsims=sum(hnsims, [])
             hnsims=torch.tensor(hnsims).cuda()

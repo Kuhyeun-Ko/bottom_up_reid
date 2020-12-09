@@ -313,7 +313,7 @@ class Bottom_up():
         # json.dump(list(map(int,label_to_pairs)), open(self.save_path+'/clustering.txt','w'))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-        print('Clustering results: ', label_to_pairs)
+        print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
         return new_train_data_, label
 
     def generate_average_feature(self, labels):
