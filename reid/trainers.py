@@ -39,7 +39,7 @@ class BaseTrainer(object):
             data_time.update(time.time() - end)
 
             inputs, targets, sceneid, label_to_pairs, indexs = self._parse_data(inputs)
-            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid)
+            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid, epoch)
     
             losses.update(loss.item(), targets.size(0))
             precisions.update(prec1, targets.size(0))
@@ -98,11 +98,11 @@ class Trainer(BaseTrainer):
         targets = Variable(videoid.cuda())
         return inputs, targets, sceneid, label_to_pairs, indexs
 
-    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid):
+    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid, epoch):
         # output is feature
         outputs, _ = self.model(inputs)
         # output is similarity
-        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs, all_label_to_clusterid)
+        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs, all_label_to_clusterid, epoch)
         prec, = accuracy(outputs.data, targets.data)
         prec = prec[0]
         return loss, prec
