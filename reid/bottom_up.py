@@ -79,7 +79,6 @@ class Bottom_up():
         indexs=torch.tensor([sample[3] for sample in samples])
         videoid=torch.tensor([sample[4] for sample in samples])
         sceneid_str=[sample[5] for sample in samples]
-        # label_to_pairs=np.array([sample[6] for sample in samples])
         label_to_pairs=[sample[6] for sample in samples]
 
         return images, images_str, pids, indexs, videoid,  sceneid_str, label_to_pairs
@@ -119,6 +118,7 @@ class Bottom_up():
 
         # adjust training epochs and learning rate
         epochs = self.initial_steps if step==0 else self.later_steps
+        # epochs=2
         init_lr = 0.1 if step==0 else 0.01 
         step_size = self.step_size if step==0 else sys.maxsize
 
