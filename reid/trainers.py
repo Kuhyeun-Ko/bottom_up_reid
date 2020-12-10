@@ -29,39 +29,29 @@ class BaseTrainer(object):
                     fixed_bns.append(name)
                     module.eval() 
 
-        batch_time = AverageMeter()
-        data_time = AverageMeter()
-        losses = AverageMeter()
-        precisions = AverageMeter()
-
-        end = time.time()
+        losses=[]
         for i, inputs in enumerate(data_loader):
-            data_time.update(time.time() - end)
-
-            inputs, targets, sceneid, label_to_pairs, indexs = self._parse_data(inputs)
-            loss, prec1 = self._forward(inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid, epoch)
-    
-            losses.update(loss.item(), targets.size(0))
-            precisions.update(prec1, targets.size(0))
-
+            
+            # training
+            inputs, targets, indexs, sceneid, label_to_pairs = self._parse_data(inputs)
+            loss, prec1 = self._forward(inputs, targets, indexs, sceneid, label_to_pairs, all_label_to_clusterid)
+            if loss!=0: losses.append(loss)
             optimizer.zero_grad()
             loss.backward()
-
-            # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-            #torch.nn.utils.clip_grad_norm(self.model.parameters(), 0.75)
             optimizer.step()
-
-            batch_time.update(time.time() - end)
-            end = time.time()
+            
             if (i + 1) % print_freq == 0:
+            # if (i %100) == 0:
+                if len(losses)!=0:avg_loss=sum(losses)/len(losses)
+                else: avg_loss=0
+                print('Epoch: [%d][%d/%d] / Avg. losses: %.4f'%(epoch, i + 1, len(data_loader), avg_loss))
+                losses=[]
+
                 if self.criterion.num_pos!=0: pos_ratio=(float(self.criterion.num_hpos)/float(self.criterion.num_pos))
                 else: pos_ratio=0
                 if self.criterion.num_neg!=0: neg_ratio=(float(self.criterion.num_hneg)/float(self.criterion.num_neg))
                 else: neg_ratio=0
-                if self.criterion.num_tneg!=0: tneg_ratio=(float(self.criterion.num_thneg)/float(self.criterion.num_tneg))
-                else: tneg_ratio=0
-                print('hard pos(%d)/pos((%d)%d): %.2f, / hard neg(%d)/neg((%d)%d): %.2f'%(self.criterion.num_hpos,self.criterion.num_pos_notable, self.criterion.num_pos,pos_ratio,self.criterion.num_hneg, self.criterion.num_neg_notable, self.criterion.num_neg, neg_ratio))
-                print('table hard neg(%d)/neg(%d): %.2f'%(self.criterion.num_thneg, self.criterion.num_tneg,tneg_ratio))
+                print('hard pos(%d)/pos((%d)%d): %.2f / hard neg(%d)/neg((%d)%d): %.2f'%(self.criterion.num_hpos,self.criterion.num_pos_notable, self.criterion.num_pos,pos_ratio,self.criterion.num_hneg, self.criterion.num_neg_notable, self.criterion.num_neg, neg_ratio))
                 
                 self.criterion.num_pos=0
                 self.criterion.num_pos_notable=0
@@ -69,20 +59,8 @@ class BaseTrainer(object):
                 self.criterion.num_neg=0
                 self.criterion.num_neg_notable=0
                 self.criterion.num_hneg=0
-                self.criterion.num_tneg=0
-                self.criterion.num_thneg=0
-                
-                print('Epoch: [{}][{}/{}]\t'
-                      'Time {:.3f} ({:.3f})\t'
-                      'Data {:.3f} ({:.3f})\t'
-                      'Loss {:.3f} ({:.3f})\t'
-                      'Prec {:.2%} ({:.2%})\t'
-                      .format(epoch, i + 1, len(data_loader),
-                              batch_time.val, batch_time.avg,
-                              data_time.val, data_time.avg,
-                              losses.val, losses.avg,
-                              precisions.val, precisions.avg))
-                
+
+
 
     def _parse_data(self, inputs):
         raise NotImplementedError
@@ -96,13 +74,13 @@ class Trainer(BaseTrainer):
         imgs, _, pids, indexs, videoid, sceneid, label_to_pairs = inputs
         inputs = Variable(imgs, requires_grad=False)
         targets = Variable(videoid.cuda())
-        return inputs, targets, sceneid, label_to_pairs, indexs
+        return inputs, targets, indexs, sceneid, label_to_pairs
 
-    def _forward(self, inputs, targets, sceneid, label_to_pairs, indexs, all_label_to_clusterid, epoch):
+    def _forward(self, inputs, targets, indexs, sceneid, label_to_pairs, all_label_to_clusterid):
         # output is feature
         outputs, _ = self.model(inputs)
         # output is similarity
-        loss, outputs = self.criterion(outputs, targets, label_to_pairs, indexs, all_label_to_clusterid, epoch)
+        loss, outputs = self.criterion(outputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
         prec, = accuracy(outputs.data, targets.data)
         prec = prec[0]
         return loss, prec

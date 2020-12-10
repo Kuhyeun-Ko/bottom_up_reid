@@ -36,8 +36,7 @@ class ExLoss(nn.Module):
         self.use_prior=True
         self.use_table=True
         self.w_bu=0.
-        self.w_h=1.
-        self.w_th=0.
+        self.w_h=5.
         self.p_margin=0.1
         self.n_margin=0.1
 
@@ -47,30 +46,26 @@ class ExLoss(nn.Module):
         self.num_neg=0
         self.num_neg_notable=0
         self.num_hneg=0
-        self.num_tneg=0
-        self.num_thneg=0
-        print('use_prior: %s, w_bu: %.2f, w_h: %.2f, w_th: %.2f, p_margin: %.2f, n_margin: %.2f'%(self.use_prior, self.w_bu, self.w_h, self.w_th, self.p_margin, self.n_margin))
+        print('use_prior: %s, use_table: %s'%(self.use_prior, self.use_table))
+        print('w_bu: %.2f, w_h: %.2f, p_margin: %.2f, n_margin: %.2f'%(self.w_bu, self.w_h, self.p_margin, self.n_margin))
 
-    def forward(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid, epoch):
+    def forward(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
 
         outputs = Exclusive(self.V)(inputs, targets) * self.t
         bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
 
-        if self.use_prior: h_loss = self.ms_loss(inputs, targets, label_to_pairs, indexs, all_label_to_clusterid, epoch)
-        else: h_loss = self.no_prior_ms_loss(inputs, targets, label_to_pairs, indexs)
+        if self.use_prior: ms_loss = self.ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
+        else: ms_loss = self.no_prior_ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
 
-        # loss=bu_loss
-        # loss=bu_loss+h_loss
-        # loss=self.w_bu*bu_loss+self.w_h*h_loss+self.w_th*th_loss
-        loss=self.w_bu*bu_loss+self.w_h*h_loss
+        loss=self.w_bu*bu_loss+self.w_h*ms_loss
 
         return loss, outputs
 
 
     ## hard negative mining
-    def ms_loss(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid, epoch):
+    def ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
 
-        h_loss=[]
+        ms_loss=[]
         normalized_inputs=F.normalize(inputs, dim=1)
         sims=normalized_inputs.mm(normalized_inputs.t())
         tsims=normalized_inputs.mm(self.V.t())
@@ -114,74 +109,31 @@ class ExLoss(nn.Module):
 
         if hpsims.shape[0]==0: hp_loss=torch.zeros(1).cuda()
         else:
-            # hp_loss=F.mse_loss(hpsims, torch.ones(hpsims.shape).cuda())
-            hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
+            hp_loss=F.mse_loss(hpsims, torch.ones(hpsims.shape).cuda())
+            # hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
             # hp_loss = 1.0 / 2 * torch.log(1 + torch.sum(torch.exp(-2 * (hpsims - 0.5))))
 
         if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()
         else:
-            # hn_loss=F.mse_loss(hnsims, -torch.ones(hnsims.shape).cuda())
-            hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
+            hn_loss=F.mse_loss(hnsims, -torch.ones(hnsims.shape).cuda())
+            # hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
             # hn_loss = 1.0 / 50 * torch.log(1 + torch.sum(torch.exp( 50 * (hnsims - 0.5))))
         
-        
-        
         # loss calculate ovelapped
-        h_loss=hp_loss+hn_loss
+        ms_loss=hp_loss+hn_loss
 
         self.num_pos+=len(sum(psims, []))
         self.num_hpos+=hpsims.shape[0]
         self.num_neg+=len(sum(nsims, []))
         self.num_hneg+=hnsims.shape[0]
 
-        return h_loss
+        return ms_loss
 
-    # ## hard negative mining with table self.V
-    # def ms_loss_with_table(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid):
 
-    #     # When table self.V is filled
-    #     if len((torch.sum(self.V, 1)==torch.zeros(torch.sum(self.V, 1).shape).cuda()).nonzero())==0:
+    # ## hard negative mining
+    # def no_prior_ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
 
-    #         # threshold
-    #         normalized_inputs=F.normalize(inputs, dim=1)
-    #         sims=normalized_inputs.mm(self.V.t())
-    #         n_thrds=[]
-    #         for i, target in enumerate(targets): n_thrds.append(sims[i, target])
-    #         n_thrds=list(map(lambda x: x-self.n_margin, n_thrds))
-    #         assert len(targets)==len(n_thrds), "n_thrds has wrong length."
-            
-    #         # hard negative
-    #         tsims=self.V[targets].mm(self.V.t()) 
-    #         nsims=[[] for i in range(tsims.shape[0])]
-    #         for i, pairs in enumerate(label_to_pairs): 
-    #             all_label_to_clusterid_=list(set([ clusterid for i, clusterid in enumerate(all_label_to_clusterid) if i in pairs[1]]))
-    #             for clusterid_ in all_label_to_clusterid_: 
-    #                 nsims[i].append(tsims[i, clusterid_])
-    #         hnsims=[ list(filter(lambda x: ((x>n_thrds[i]) & (x<0.999999)), nsim)) for i, nsim in enumerate(nsims)]
-    #         hnsims=sum(hnsims, [])
-    #         hnsims=torch.tensor(hnsims).cuda()
-
-    #         if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()
-    #         else: 
-    #             hn_loss=F.mse_loss(hnsims, torch.zeros(hnsims.shape).cuda())
-    #             hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
-
-    #         # loss calculate ovelapped
-    #         th_loss=hn_loss
-
-    #         self.num_tneg+=len(sum(nsims, []))
-    #         self.num_thneg+=hnsims.shape[0]
-
-    #     else: th_loss=torch.zeros(1).cuda()
-
-    #     return th_loss
-
-    ## hard negative mining without prior
-
-    ## hard negative mining
-    # def no_prior_ms_loss(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid):
-
-    #     h_loss=[]
+    #     ms_loss=[]
     #     normalized_inputs=F.normalize(inputs, dim=1)
     #     sims=normalized_inputs.mm(normalized_inputs.t())
     #     tsims=normalized_inputs.mm(self.V.t())
@@ -227,22 +179,66 @@ class ExLoss(nn.Module):
     #     else:
     #         hp_loss=F.mse_loss(hpsims, torch.ones(hpsims.shape).cuda())
     #         # hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
+    #         # hp_loss = 1.0 / 2 * torch.log(1 + torch.sum(torch.exp(-2 * (hpsims - 0.5))))
 
     #     if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()
     #     else:
-    #         hn_loss=F.mse_loss(hnsims, torch.zeros(hnsims.shape).cuda())
+    #         hn_loss=F.mse_loss(hnsims, -torch.ones(hnsims.shape).cuda())
     #         # hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
-        
+    #         # hn_loss = 1.0 / 50 * torch.log(1 + torch.sum(torch.exp( 50 * (hnsims - 0.5))))
         
     #     # loss calculate ovelapped
-    #     h_loss=hp_loss+hn_loss
+    #     ms_loss=hp_loss+hn_loss
 
     #     self.num_pos+=len(sum(psims, []))
     #     self.num_hpos+=hpsims.shape[0]
     #     self.num_neg+=len(sum(nsims, []))
     #     self.num_hneg+=hnsims.shape[0]
 
-    #     return h_loss
+    #     return ms_loss
+
+
+    # ## hard negative mining with table self.V
+    # def ms_loss_with_table(self, inputs, targets, label_to_pairs, indexs, all_label_to_clusterid):
+
+    #     # When table self.V is filled
+    #     if len((torch.sum(self.V, 1)==torch.zeros(torch.sum(self.V, 1).shape).cuda()).nonzero())==0:
+
+    #         # threshold
+    #         normalized_inputs=F.normalize(inputs, dim=1)
+    #         sims=normalized_inputs.mm(self.V.t())
+    #         n_thrds=[]
+    #         for i, target in enumerate(targets): n_thrds.append(sims[i, target])
+    #         n_thrds=list(map(lambda x: x-self.n_margin, n_thrds))
+    #         assert len(targets)==len(n_thrds), "n_thrds has wrong length."
+            
+    #         # hard negative
+    #         tsims=self.V[targets].mm(self.V.t()) 
+    #         nsims=[[] for i in range(tsims.shape[0])]
+    #         for i, pairs in enumerate(label_to_pairs): 
+    #             all_label_to_clusterid_=list(set([ clusterid for i, clusterid in enumerate(all_label_to_clusterid) if i in pairs[1]]))
+    #             for clusterid_ in all_label_to_clusterid_: 
+    #                 nsims[i].append(tsims[i, clusterid_])
+    #         hnsims=[ list(filter(lambda x: ((x>n_thrds[i]) & (x<0.999999)), nsim)) for i, nsim in enumerate(nsims)]
+    #         hnsims=sum(hnsims, [])
+    #         hnsims=torch.tensor(hnsims).cuda()
+
+    #         if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()
+    #         else: 
+    #             hn_loss=F.mse_loss(hnsims, torch.zeros(hnsims.shape).cuda())
+    #             hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
+
+    #         # loss calculate ovelapped
+    #         th_loss=hn_loss
+
+    #         self.num_tneg+=len(sum(nsims, []))
+    #         self.num_thneg+=hnsims.shape[0]
+
+    #     else: th_loss=torch.zeros(1).cuda()
+
+    #     return th_loss
+
+    ## hard negative mining without prior
 
 
     # ## hard negative mining with table self.V

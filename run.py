@@ -60,14 +60,10 @@ if __name__ == '__main__':
                         default=os.path.join(working_dir,'../datasets'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
     #                     default=os.path.join(working_dir,'logs/PRW_BUformat'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/u_constraint'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/cosine_similarity'))
-    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs/tmp'))
+                        default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
     parser.add_argument('--loss', type=str, default='ExLoss')
     parser.add_argument('-m', '--momentum', type=float, default=0.5)

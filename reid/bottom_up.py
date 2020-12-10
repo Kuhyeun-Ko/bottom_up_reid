@@ -118,7 +118,6 @@ class Bottom_up():
 
         # adjust training epochs and learning rate
         epochs = self.initial_steps if step==0 else self.later_steps
-        # epochs=2
         init_lr = 0.1 if step==0 else 0.01 
         step_size = self.step_size if step==0 else sys.maxsize
 
@@ -296,12 +295,16 @@ class Bottom_up():
         array_new_train_data=np.array(new_train_data)
         for i, sid in enumerate(array_new_train_data[:,4]): array_new_train_data[i,4]=sid[0]
         for i in range(len(array_new_train_data)):
+            # positive
             ppid=list((array_new_train_data[i,3]==array_new_train_data[:,3]).nonzero()[0][:])
+
+            # negative
+            npid=[]
             for ppid_ in ppid: npid+=list((array_new_train_data[ppid_,4]==array_new_train_data[:,4]).nonzero()[0][:])
             npid=list(set(npid))
-
             for ppid_ in ppid: npid.remove(ppid_)
             ppid.remove(i)
+
             label_to_pairs[i]=[ppid, npid]
 
         new_train_data_ = []
@@ -314,9 +317,7 @@ class Bottom_up():
         # json.dump(list(map(int,label_to_pairs)), open(self.save_path+'/clustering.txt','w'))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-        # print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
-        print('Clustering results: ', label_to_pairs)
-        print('self.u_data: ', self.u_data)
+        print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
         return new_train_data_, label
 
     def generate_average_feature(self, labels):
@@ -381,10 +382,11 @@ class Bottom_up():
         self.model.load_state_dict(torch.load(model_path))
 
 def change_to_unlabel(dataset):
+
     # generate unlabeled set
     trimmed_dataset = []
     init_videoid = int(dataset.train[0][3])
-    for (imgs, pid, camid, videoid, sceneid, _) in dataset.train:
+    for (imgs, pid, camid, videoid, sceneid) in dataset.train:
         videoid = int(videoid) - init_videoid
         if videoid < 0:
             print(videoid, 'RANGE ERROR')
@@ -395,15 +397,12 @@ def change_to_unlabel(dataset):
         data[3] = idx # data[3] is the label of the data array
         index_labels.append(data[3])  # index
 
-    # negative pair
+    # negative pairs on the same scene
     label_to_pairs=OrderedDict()
-    array_trimmed_dataset=np.array(trimmed_dataset)
-    for j, sid in enumerate(array_trimmed_dataset[:,4]): array_trimmed_dataset[j,4]=sid[0]
-    for i in range(len(array_trimmed_dataset)):
-        npid=list((array_trimmed_dataset[i,4]==array_trimmed_dataset[:,4]).nonzero()[0][:])
+    scene_ids=[ trimmed_data[4][0] for trimmed_data in trimmed_dataset]
+    for i, trimmed_data in enumerate(trimmed_dataset):
+        npid=list((scene_ids[i]==np.array(scene_ids)).nonzero()[0][:])
         npid.remove(i)
-        label_to_pairs[i]=[[], npid]
-    
-    for i, traimmed_data in enumerate(trimmed_dataset): traimmed_data.append(label_to_pairs[i])
+        trimmed_data.append([[], npid])
 
     return trimmed_dataset, index_labels
