@@ -16,7 +16,7 @@ The performances is listed below:
 - h5py, scikit-learn, metric-learn, tqdm
 
 ### Download datasets 
-- PRW: You can download datasets here [page](https://drive.google.com/file/d/13-rHAm120Rqhx7oaIB6GJIUB_WiYjK8W/view?usp=sharing) and set the path on run.py line 59(args.data_dir)
+- PRW: You can download datasets [here](https://drive.google.com/file/d/13-rHAm120Rqhx7oaIB6GJIUB_WiYjK8W/view?usp=sharing) and set the datasets path on run.py line 59(args.data_dir)
 
 ## Usage
 
