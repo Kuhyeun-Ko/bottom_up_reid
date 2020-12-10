@@ -35,8 +35,8 @@ class ExLoss(nn.Module):
         
         self.use_prior=True
         self.use_table=True
-        self.w_bu=1.
-        self.w_h=10.
+        self.w_bu=0.
+        self.w_h=1.
         self.w_th=0.
         self.p_margin=0.1
         self.n_margin=0.1
@@ -115,14 +115,14 @@ class ExLoss(nn.Module):
         if hpsims.shape[0]==0: hp_loss=torch.zeros(1).cuda()
         else:
             # hp_loss=F.mse_loss(hpsims, torch.ones(hpsims.shape).cuda())
-            # hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
-            hp_loss = 1.0 / 2 * torch.log(1 + torch.sum(torch.exp(-2 * (hpsims - 0.5))))
+            hp_loss=F.binary_cross_entropy_with_logits(hpsims, torch.ones(hpsims.shape).cuda())
+            # hp_loss = 1.0 / 2 * torch.log(1 + torch.sum(torch.exp(-2 * (hpsims - 0.5))))
 
         if hnsims.shape[0]==0: hn_loss=torch.zeros(1).cuda()
         else:
             # hn_loss=F.mse_loss(hnsims, -torch.ones(hnsims.shape).cuda())
-            # hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
-            hn_loss = 1.0 / 50 * torch.log(1 + torch.sum(torch.exp( 50 * (hnsims - 0.5))))
+            hn_loss=F.binary_cross_entropy_with_logits(hnsims, torch.zeros(hnsims.shape).cuda())
+            # hn_loss = 1.0 / 50 * torch.log(1 + torch.sum(torch.exp( 50 * (hnsims - 0.5))))
         
         
         

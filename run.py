@@ -42,8 +42,8 @@ def main(args):
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')
-        cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
-        # cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        # cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
 
 if __name__ == '__main__':

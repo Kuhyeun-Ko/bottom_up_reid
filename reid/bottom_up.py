@@ -294,13 +294,14 @@ class Bottom_up():
         # get positive, negative pairs
         label_to_pairs=OrderedDict()
         array_new_train_data=np.array(new_train_data)
-        for j, sid in enumerate(array_new_train_data[:,4]): array_new_train_data[j,4]=sid[0]
+        for i, sid in enumerate(array_new_train_data[:,4]): array_new_train_data[i,4]=sid[0]
         for i in range(len(array_new_train_data)):
             ppid=list((array_new_train_data[i,3]==array_new_train_data[:,3]).nonzero()[0][:])
+            for ppid_ in ppid: npid+=list((array_new_train_data[ppid_,4]==array_new_train_data[:,4]).nonzero()[0][:])
+            npid=list(set(npid))
+
+            for ppid_ in ppid: npid.remove(ppid_)
             ppid.remove(i)
-            npid=list((array_new_train_data[i,4]==array_new_train_data[:,4]).nonzero()[0][:])
-            npid.remove(i)
-            
             label_to_pairs[i]=[ppid, npid]
 
         new_train_data_ = []
@@ -313,7 +314,9 @@ class Bottom_up():
         # json.dump(list(map(int,label_to_pairs)), open(self.save_path+'/clustering.txt','w'))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-        print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
+        # print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
+        print('Clustering results: ', label_to_pairs)
+        print('self.u_data: ', self.u_data)
         return new_train_data_, label
 
     def generate_average_feature(self, labels):
