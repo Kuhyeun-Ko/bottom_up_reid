@@ -1,13 +1,13 @@
-# Unsupervised Person Re-identification for person search
+# Unsupervised Person Re-identification for Person Search
 This repository is for UNIST lecture "Machin learning fundamentals" final project. The code is based on the [A Bottom-Up Clustering Approach to Unsupervised Person Re-identification](https://github.com/vana77/Bottom-up-Clustering-Person-Re-identification) library. 
 
 ## Performances
 The performances is listed below:
 
-|       | rank-1     | rank-5     | rank-10     | mAP     |
+|       | mAP     |rank-1     | rank-5     | rank-10     | 
 | ---------- | :-----------:  | :-----------: |:-----------:  | :-----------: |
-| PRW     | -     | -     |-     | -     |
-
+| PRW     |  19.1%| 47.3%| 59.2% | 63.7% |
+| PRW with constraint    | 19.4% | 49.4%|59.6%| 64.9%|
 
 ## Preparation
 ### Dependencies
