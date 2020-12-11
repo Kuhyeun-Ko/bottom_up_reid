@@ -35,7 +35,7 @@ class ExLoss(nn.Module):
         
         self.use_prior=True
         self.use_table=True
-        self.w_bu=0.
+        self.w_bu=1.
         self.w_h=5.
         self.p_margin=0.1
         self.n_margin=0.1
