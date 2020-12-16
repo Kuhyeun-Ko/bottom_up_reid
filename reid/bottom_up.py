@@ -65,6 +65,10 @@ class Bottom_up():
             self.later_steps = 2
             # self.later_steps = 6
 
+        self.initial_steps = 40
+        self.later_steps = 4
+        print('initial_steps: %d, later_steps: %d' %(self.initial_steps, self.later_steps))
+
         model = models.create(self.model_name, dropout=self.dropout, 
                               embeding_fea_size=self.embeding_fea_size, fixed_layer=self.fixed_layer)
         self.model = nn.DataParallel(model).cuda()
@@ -263,7 +267,6 @@ class Bottom_up():
         for i in range(len(idx1)):
             label1 = label[idx1[i]]
             label2 = label[idx2[i]]
-
             if label1 < label2:
                 label = [label1 if x == label2 else x for x in label]
             else:
@@ -317,7 +320,7 @@ class Bottom_up():
         # json.dump(list(map(int,label_to_pairs)), open(self.save_path+'/clustering.txt','w'))
         print("num of label before merge: ", num_before_merge, " after_merge: ", num_after_merge, " sub: ",
               num_before_merge - num_after_merge)
-        print('Clustering results: ', label_to_pairs[0], label_to_pairs[1], label_to_pairs[2], label_to_pairs[3], label_to_pairs[4])
+        print('Clustering results: ', label_to_pairs[0], label_to_pairs[1])
         return new_train_data_, label
 
     def generate_average_feature(self, labels):

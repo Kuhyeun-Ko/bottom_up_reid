@@ -34,7 +34,8 @@ def main(args):
             u_data=new_train_data, save_path=osp.join(args.logs_dir, '%s%s%s_%s%s%s'%(now.year, str(now.month).zfill(2), str(now.day).zfill(2), str(now.hour).zfill(2), str(now.minute).zfill(2), str(now.second).zfill(2))),
             max_frames=args.max_frames,
             embeding_fea_size=args.fea)
-
+    
+    print('clustering constraint: ', args.cc)
     for step in range(int(1/args.merge_percent)-1):
         
         BuMain.train(new_train_data, step, loss=args.loss) 
@@ -42,8 +43,8 @@ def main(args):
 
         # get new train data for the next iteration
         print('----------------------------------------bottom-up clustering------------------------------------------------')
-        # cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
-        cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        if args.cc: cluster_id_labels, new_train_data = BuMain.get_new_unique_constratint_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
+        else: cluster_id_labels, new_train_data = BuMain.get_new_train_data(cluster_id_labels, nums_to_merge, size_penalty=args.size_penalty)
 
 
 if __name__ == '__main__':
@@ -59,9 +60,11 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', type=str, metavar='PATH',
                         default=os.path.join(working_dir,'../datasets'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
-    #                     default=os.path.join(working_dir,'logs/PRW_BUformat'))
+    #                     default=os.path.join(working_dir,'logs/PRW/bu'))
+    # parser.add_argument('--logs_dir', type=str, metavar='PATH',
+    #                     default=os.path.join(working_dir,'logs/PRW/ms'))
     parser.add_argument('--logs_dir', type=str, metavar='PATH',
-                        default=os.path.join(working_dir,'logs/PRW_BUformat/hard_negative'))
+                        default=os.path.join(working_dir,'logs/PRW/all'))
     # parser.add_argument('--logs_dir', type=str, metavar='PATH',
     #                     default=os.path.join(working_dir,'logs/tmp'))
     parser.add_argument('--max_frames', type=int, default=900)
@@ -70,6 +73,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--step_size', type=int, default=55)
     parser.add_argument('--size_penalty',type=float, default=0.005)
     parser.add_argument('-mp', '--merge_percent',type=float, default=0.05)
+    parser.add_argument('--cc', '--clustering_constraint',type=bool, default=False)
     main(parser.parse_args())
     
 

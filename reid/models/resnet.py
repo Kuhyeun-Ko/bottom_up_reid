@@ -80,13 +80,13 @@ class ResNet(nn.Module):
             if name == 'avgpool':
                 break
             x = module(x)
+            # if name == 'layer2': print('module.parameters(): ', list(module.parameters())[0])
 
         if self.cut_at_pooling:
             return x
 
         x = F.avg_pool2d(x, x.size()[2:])
         x = x.view(x.size(0), -1)
-
         return x
 
     def reset_params(self):

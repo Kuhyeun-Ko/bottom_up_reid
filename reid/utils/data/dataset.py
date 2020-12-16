@@ -74,8 +74,8 @@ class Dataset(object):
                 pid, cam, vid,  _ = map(int, name.split('_'))
                 self.train.append((tuple(fname_list), pid, cam, vid, tuple([sname_list])))
 
-            # self.train=self.train[:60]
-            # self.query=self.query[:60]
+            # self.train=self.train[:80]
+            # self.query=self.query[:80]
             # self.gallery=self.gallery[:15]
 
         if verbose:

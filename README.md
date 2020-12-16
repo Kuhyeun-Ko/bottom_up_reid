@@ -11,6 +11,8 @@ The performances is listed below:
 
 ## Preparation
 ### Dependencies
+You can easily set the environment with docker. You can download docker images khko/pytorch:1.4.0 on docker hub.
+
 - Python 3.6
 - PyTorch (version >= 0.4.1)
 - h5py, scikit-learn, metric-learn, tqdm
