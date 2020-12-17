@@ -31,6 +31,7 @@ You can set following suboptions.
 - step size(init step/later step): reid/bottom_up.py initial_steps and step_size
 - margin: reid/exclusive_loss.py: self.p_margin, self.n_margin
 
+### Training
 1. set dataset path on the run.py args.data_dir
 2. choose combination of 4 options(bucc, burn, mst, msrn) on the run.sh
 3. training:
