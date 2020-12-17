@@ -18,7 +18,7 @@ You can easily set the environment with docker. You can download docker images k
 - h5py, scikit-learn, metric-learn, tqdm
 
 ### Download datasets 
-- PRW: You can download datasets [here](https://drive.google.com/file/d/13-rHAm120Rqhx7oaIB6GJIUB_WiYjK8W/view?usp=sharing) and set the datasets path on run.py line 59(args.data_dir).
+- PRW: You can download datasets [here](https://drive.google.com/file/d/13-rHAm120Rqhx7oaIB6GJIUB_WiYjK8W/view?usp=sharing) and set the datasets path on run.py.
 
 ## Usage
 You can set following 4 experiments on run.sh.
