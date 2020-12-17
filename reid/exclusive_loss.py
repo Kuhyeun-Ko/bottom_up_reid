@@ -6,9 +6,9 @@ import numpy as np
 from torch import nn, autograd
 
 
-class Exclusive(autograd.Function):
+class Real_negative_exclusive(autograd.Function):
     def __init__(self, V, label_to_pairs, all_label_to_clusterid):
-        super(Exclusive, self).__init__()
+        super(Real_negative_exclusive, self).__init__()
         self.V = V
         self.label_to_pairs=label_to_pairs
         self.all_label_to_clusterid=all_label_to_clusterid
@@ -30,9 +30,9 @@ class Exclusive(autograd.Function):
             self.V[y] = F.normalize( (self.V[y] + x) / 2, p=2, dim=0)
         return grad_inputs, None
 
-class no_prior_Exclusive(autograd.Function):
+class Exclusive(autograd.Function):
     def __init__(self, V):
-        super(no_prior_Exclusive, self).__init__()
+        super(Exclusive, self).__init__()
         self.V = V
 
     def forward(self, inputs, targets):
@@ -50,8 +50,7 @@ class no_prior_Exclusive(autograd.Function):
 
 
 class ExLoss(nn.Module):
-    def __init__(self, num_features, num_classes, t=1.0,
-                 weight=None):
+    def __init__(self, num_features, num_classes, bottom_up_real_negative=False, ms_table=False, ms_real_negative=False, t=1.0, weight=None):
         super(ExLoss, self).__init__()
         self.num_features = num_features
         self.t = t
@@ -59,10 +58,10 @@ class ExLoss(nn.Module):
         self.register_buffer('V', torch.zeros(num_classes, num_features))
         
         self.w_bu=1.
-        self.w_ms=1.
-        self.use_prior_bu=False
-        self.use_prior_ms=True
-        self.use_table_ms=True
+        self.w_ms=0.
+        self.bottom_up_real_negative=bottom_up_real_negative
+        self.ms_real_negative=ms_real_negative
+        self.ms_table=ms_table
         self.p_margin=0.5
         self.n_margin=0.5
         
@@ -73,37 +72,38 @@ class ExLoss(nn.Module):
         self.num_neg_notable=0
         self.num_hneg=0
         print('w_bu: %.2f, w_ms: %.2f, p_margin: %.2f, n_margin: %.2f'%(self.w_bu, self.w_ms, self.p_margin, self.n_margin))
-        print('use_prior_bu: %s, use_prior_ms: %s, use_table_ms: %s'%(self.use_prior_bu, self.use_prior_ms, self.use_table_ms))
+        print('bottom_up_real_negative: %s, ms_real_negative: %s, ms_table: %s'%(self.bottom_up_real_negative, self.ms_real_negative, self.ms_table))
 
     def forward(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
         
         # bu loss        
-        if self.use_prior_bu:
-            outputs = Exclusive(self.V, label_to_pairs, all_label_to_clusterid)(inputs, targets) * self.t
+        if self.bottom_up_real_negative:
+            outputs = Real_negative_exclusive(self.V, label_to_pairs, all_label_to_clusterid)(inputs, targets) * self.t
             bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
         else:
-            outputs = no_prior_Exclusive(self.V)(inputs, targets) * self.t
+            outputs = Exclusive(self.V)(inputs, targets) * self.t
             bu_loss = F.cross_entropy(outputs, targets, weight=self.weight)
         
         # ms loss
-        if self.use_prior_ms: ms_loss, outputs = self.ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
-        else: ms_loss, outputs = self.no_prior_ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
+        if self.ms_real_negative: ms_loss, outputs = self.real_negative_ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
+        else: ms_loss, outputs = self.ms(inputs, targets, indexs, label_to_pairs, all_label_to_clusterid)
         
-        # loss=self.w_ms*ms_loss
         # loss=self.w_bu*bu_loss
+        # loss=self.w_ms*ms_loss
         loss=self.w_ms*ms_loss+self.w_bu*bu_loss
+        print('in')
 
         return loss, outputs
 
 
     ## hard negative mining
-    def ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
+    def real_negative_ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
 
         ms_loss=[]
         sims=inputs.mm(inputs.t())
-        # if self.use_prior_ms: tsims=Exclusive(self.V)(inputs, targets, label_to_pairs, all_label_to_clusterid) 
+        # if self.ms_real_negative: tsims=Exclusive(self.V)(inputs, targets, label_to_pairs, all_label_to_clusterid) 
         # else: tsims=no_prior_Exclusive(self.V)(inputs, targets) 
-        tsims=no_prior_Exclusive(self.V)(inputs, targets)
+        tsims=Exclusive(self.V)(inputs, targets)
 
         psims=[[] for i in range(sims.shape[0])]
         nsims=[[] for i in range(sims.shape[0])]
@@ -115,7 +115,7 @@ class ExLoss(nn.Module):
                     for index in [(ppair==indexs).nonzero().item()]: 
                         psims[i].append(sims[i, index])
                         self.num_pos_notable+=1
-            if self.use_table_ms:
+            if self.ms_table:
                 if tsims[i, target] !=0: psims[i].append(tsims[i, target])
             
             # negative
@@ -124,7 +124,7 @@ class ExLoss(nn.Module):
                     for index in [(npair==indexs).nonzero().item()]: 
                         nsims[i].append(sims[i, index])
                         self.num_neg_notable+=1
-                if self.use_table_ms:
+                if self.ms_table:
                     if tsims[i, all_label_to_clusterid[npair]] !=0: nsims[i].append(tsims[i, all_label_to_clusterid[npair]])
             
     
@@ -168,13 +168,13 @@ class ExLoss(nn.Module):
 
 
     ## hard negative mining
-    def no_prior_ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
+    def ms(self, inputs, targets, indexs, label_to_pairs, all_label_to_clusterid):
 
         ms_loss=[]
         sims=inputs.mm(inputs.t())
-        # if self.use_prior_ms: tsims=Exclusive(self.V)(inputs, targets, label_to_pairs) 
+        # if self.ms_real_negative: tsims=Exclusive(self.V)(inputs, targets, label_to_pairs) 
         # else: tsims=no_prior_Exclusive(self.V)(inputs, targets) 
-        tsims=no_prior_Exclusive(self.V)(inputs, targets)
+        tsims=Exclusive(self.V)(inputs, targets)
 
         psims=[[] for i in range(sims.shape[0])]
         nsims=[[] for i in range(sims.shape[0])]
@@ -184,7 +184,7 @@ class ExLoss(nn.Module):
             for index in (target==targets).nonzero().view(-1).tolist():
                 psims[i].append(sims[i, index])
                 self.num_pos_notable+=1
-            if self.use_table_ms:
+            if self.ms_table:
                 if tsims[i, target] !=0: psims[i].append(tsims[i, target])
             
             # negative
@@ -192,7 +192,7 @@ class ExLoss(nn.Module):
                 nsims[i].append(sims[i, index])
                 self.num_neg_notable+=1
             
-            if self.use_table_ms:
+            if self.ms_table:
                 mask=torch.zeros(len(self.V)).type(torch.bool).cuda()
                 mask[target]=True
                 tsims[i, mask]=0

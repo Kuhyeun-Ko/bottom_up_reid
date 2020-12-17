@@ -21,7 +21,8 @@ import json
 
 class Bottom_up():
     def __init__(self, model_name, batch_size, num_classes, dataset, u_data, save_path, embeding_fea_size=1024,
-                 dropout=0.5, max_frames=900, initial_steps=20, step_size=16):
+                 dropout=0.5, max_frames=900, initial_steps=20, step_size=16,
+                 bottom_up_real_negative=False, ms_table=False, ms_real_negative=False):
 
         self.model_name = model_name
         self.num_classes = num_classes
@@ -63,17 +64,20 @@ class Bottom_up():
             self.fixed_layer = False
             self.frames_per_video = 1
             self.later_steps = 2
-            # self.later_steps = 6
+        
+        self.bottom_up_real_negative=bottom_up_real_negative
+        self.ms_table=ms_table
+        self.ms_real_negative=ms_real_negative
 
-        self.initial_steps = 40
-        self.later_steps = 4
+        # self.initial_steps = 40
+        # self.later_steps = 4
         print('initial_steps: %d, later_steps: %d' %(self.initial_steps, self.later_steps))
 
         model = models.create(self.model_name, dropout=self.dropout, 
                               embeding_fea_size=self.embeding_fea_size, fixed_layer=self.fixed_layer)
         self.model = nn.DataParallel(model).cuda()
 
-        self.criterion = ExLoss(self.embeding_fea_size, self.num_classes, t=10).cuda()
+        self.criterion = ExLoss(self.embeding_fea_size, self.num_classes, self.bottom_up_real_negative, self.ms_table, self.ms_real_negative, t=10).cuda()
 
     def make_batch(self, samples):
         images=torch.empty(size=(len(samples), 1, 3, 256, 128))
@@ -353,7 +357,7 @@ class Bottom_up():
         num_train_ids = len(np.unique(np.array(labels)))
 
         # change the criterion classifer
-        self.criterion = ExLoss(self.embeding_fea_size, num_train_ids, t=10).cuda()
+        self.criterion = ExLoss(self.embeding_fea_size, num_train_ids, self.bottom_up_real_negative, self.ms_table, self.ms_real_negative, t=10).cuda()
         #new_classifier = fc_avg.astype(np.float32)
         #self.criterion.V = torch.from_numpy(new_classifier).cuda()
       
@@ -372,7 +376,7 @@ class Bottom_up():
         num_train_ids = len(np.unique(np.array(labels)))
 
         # change the criterion classifer
-        self.criterion = ExLoss(self.embeding_fea_size, num_train_ids, t=10).cuda()
+        self.criterion = ExLoss(self.embeding_fea_size, num_train_ids, self.bottom_up_real_negative, self.ms_table, self.ms_real_negative, t=10).cuda()
         #new_classifier = fc_avg.astype(np.float32)
         #self.criterion.V = torch.from_numpy(new_classifier).cuda()
 
